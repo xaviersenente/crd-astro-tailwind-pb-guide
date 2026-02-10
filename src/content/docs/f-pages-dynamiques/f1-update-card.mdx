@@ -1,0 +1,130 @@
+---
+title: Page Agenda
+description: création de la page Agenda
+---
+
+Pour gérer correctement les données provenant de PocketBase, le composant `Card` nécessite quelques adaptations.
+
+### Remplacement de l'image statique
+
+```astro title="src/components/Card.astro" ins={3,16-22} del={2,8-15}
+---
+import { Picture } from "astro:assets";
+import ImagePB from "./ImagePB.astro";
+const event = Astro.props;
+---
+
+<article class="group col-span-4 grid grid-cols-[24px_1fr] grid-rows-[200px_48px_1fr] lg:grid-cols-[2fr_11fr]">
+  <Picture
+    src={event.imgFile}
+    alt={event.imgAlt}
+    pictureAttributes={{
+      class: "duotone col-start-1 row-start-1 col-span-2 row-span-2 group-hover:before:bg-black",
+    }}
+    class="group-hover:mix-blend-normal group-hover:grayscale-0"
+  />
+  <ImagePB
+    record={event}
+    field="imgFile"
+    alt={event.imgAlt}
+    classPicture="duotone col-start-1 row-start-1 col-span-2 row-span-2 group-hover:before:bg-black"
+    classImg="group-hover:grayscale-0 group-hover:mix-blend-normal"
+  />
+  {/* ... reste du composant ... */}
+</article>
+```
+
+Le composant `ImagePB` remplace le composant `Picture` classique et gère automatiquement la construction des URLs PocketBase ainsi que l'optimisation des images avec le paramètre `thumb`.
+
+## Formatage de la date
+
+La date stockée dans PocketBase est au format ISO 8601. Pour l'afficher de manière lisible en français, nous devons la formater.
+
+### Création du helper de formatage
+
+Pour formater les dates de manière cohérente dans toute l'application, créez un fichier utilitaire `src/js/helpers.js` :
+
+```js title="src/js/helpers.js"
+/**
+ * Formatter Intl.DateTimeFormat singleton pour éviter de recréer l'objet à chaque appel
+ */
+const formatter = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+  hour12: false,
+  timeZone: "Europe/Paris",
+});
+
+/**
+ * Formate une date en français avec heure
+ * @param {string|Date} dateString - Date à formater
+ * @returns {string} Date formatée
+ */
+export function formatDate(dateString) {
+  const date = new Date(dateString);
+  return formatter.format(date);
+}
+```
+**Avantages de cette approche** :
+
+1. **Performance** : Le formatter est créé une seule fois (singleton) et réutilisé à chaque appel
+2. **Cohérence** : Le format de date est uniforme dans toute l'application
+3. **Réutilisabilité** : La fonction peut être importée partout où c'est nécessaire
+4. **Internationalisation** : Utilise l'API native `Intl.DateTimeFormat` qui gère correctement les formats locaux
+
+:::note[Format de sortie]
+Avec cette configuration, une date comme `2026-02-15T20:00:00.000Z` sera formatée en : **15 février 2026 à 21:00**
+:::
+
+### Utilisation de la fonction de formatage
+
+```astro title="src/components/Card.astro" ins={2} ins='formatDate(' ins=')'
+---
+import { formatDate } from "../js/helpers";
+import ImagePB from "./ImagePB.astro";
+
+const event = Astro.props;
+---
+  <p class="uppercase">{ formatDate(event.date) }</p>
+```
+
+## Code final complet
+
+```astro title="src/components/Card.astro"
+---
+import { formatDate } from "../js/helpers";
+import ImagePB from "./ImagePB.astro";
+const event = Astro.props;
+---
+
+<article
+  class="group col-span-4 grid grid-cols-[24px_1fr] grid-rows-[200px_48px_1fr] lg:grid-cols-[2fr_11fr]"
+>
+  <ImagePB
+    record={event}
+    field="imgFile"
+    alt={event.imgAlt}
+    classPicture="duotone col-start-1 row-start-1 col-span-2 row-span-2 group-hover:before:bg-black"
+    classImg="group-hover:grayscale-0 group-hover:mix-blend-normal"
+  />
+  <h3
+    class="z-1 col-start-2 row-start-1 my-6 mr-4 self-end font-mono text-3xl text-white"
+  >
+    <a href="#">{event.title}</a>
+  </h3>
+  <div
+    class="z-2 col-span-1 col-start-2 row-span-2 row-start-2 space-y-4 bg-white p-6"
+  >
+    <p class="uppercase">{formatDate(event.date)}</p>
+    <p>{event.excerpt}</p>
+    <a class="inline-block border-b-2 border-black uppercase" href="#"
+      >Plus d'info</a
+    >
+  </div>
+</article>
+```
+
+La page Agenda est maintenant fonctionnelle et affiche dynamiquement tous les événements à venir récupérés depuis PocketBase, avec leurs images optimisées et leurs dates formatées en français.

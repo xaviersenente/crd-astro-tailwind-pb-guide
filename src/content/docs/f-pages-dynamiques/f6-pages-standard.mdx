@@ -1,0 +1,242 @@
+---
+title: Template des pages standard
+description: Créer des pages dynamiques pour le contenu éditorial
+---
+
+:::note[Branche Git]
+**Branche :** [23.-Pages-standard](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/23.-Pages-standard)  
+**N° :** 23
+:::
+
+## Introduction
+
+Maintenant que nous maîtrisons la création de pages dynamiques avec le template d'événement, nous allons appliquer le même principe pour créer un **template de pages standard**. Ces pages correspondent à la collection `page` dans PocketBase et permettront de gérer tout le contenu éditorial du site (à propos, mentions légales, contact, etc.).
+
+Le fonctionnement est identique à celui du template événement :
+
+- Une route dynamique avec `[page].astro`
+- La fonction `getStaticPaths()` pour générer toutes les pages au build
+- Utilisation du composant `Hero` pour l'en-tête
+- Affichage du contenu Rich Editor avec la classe `rich-editor`
+
+La principale différence est que ce template est **plus simple** : pas d'informations complémentaires (date, lieu, catégorie), juste un titre, un extrait et le contenu.
+
+## Création du template de page
+
+### Structure du fichier
+
+Créez le fichier `src/pages/[page].astro` à la racine du dossier `pages` :
+
+```astro title="src/pages/[page].astro"
+---
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
+import ImagePB from "../components/ImagePB.astro";
+
+import { getCollection } from "../js/backend.mjs";
+
+export async function getStaticPaths() {
+  const pages = await getCollection("page");
+
+  return pages.map((page) => ({
+    params: { page: page.id },
+    props: { page },
+  }));
+}
+
+const { page } = Astro.props;
+
+if (!page) {
+  return Astro.redirect("/404");
+}
+
+const title = page.title;
+const description = page.excerpt;
+---
+
+<Layout title={title} description={description}>
+  <Hero title={title}>
+    <p slot="chapo">{page.excerpt}</p>
+    <ImagePB
+      slot="image"
+      record={page}
+      field="imgFile"
+      alt={page?.imgAlt || "Image"}
+      classPicture="duotone !absolute inset-0 object-cover"
+    />
+  </Hero>
+  <div
+    class="rich-editor mx-6 my-16 max-w-2xl lg:mx-auto"
+    set:html={page.description}
+  />
+</Layout>
+```
+
+## Modification des liens dans le menu
+
+### Liens vers les pages dynamiques
+
+Maintenant que nos pages dynamiques sont créées, nous devons mettre à jour les liens dans le composant `Header` pour pointer vers ces pages. Pour l'instant, nous allons utiliser les **IDs PocketBase** directement dans les URLs.
+
+:::caution[URLs temporaires]
+Dans cette première version, nous utilisons les IDs PocketBase (comme `ovsk2ybob0vye6o`) pour simplifier l'implémentation. Ces IDs ne sont pas très lisibles ni mémorables pour les utilisateurs. Dans un chapitre ultérieur, nous verrons comment générer automatiquement des **slugs propres** (comme `/le-conservatoire` ou `/contact`) pour améliorer l'expérience utilisateur et le SEO.
+:::
+
+### Code mis à jour du Header
+
+Modifiez votre fichier `src/components/Header.astro` pour mettre à jour les liens du menu :
+
+```astro title="src/components/Header.astro" {48-50,53-55,58-60,63-66,69-73}
+---
+import Logo from "../assets/icones/logo.svg";
+import IconSearch from "../assets/icones/icon_search.svg";
+---
+
+<header
+  class="fixed z-10 flex w-full items-stretch justify-between px-6 py-4 transition-all duration-300 ease-in-out lg:bg-white lg:py-0"
+  id="header"
+>
+  <div class="relative z-20 flex items-center">
+    <a href="/" aria-label="Accueil">
+      <Logo />
+    </a>
+  </div>
+
+  <div class="flex items-center gap-4 lg:flex-row-reverse">
+    <button class="flex w-12 justify-center" aria-label="Recherche">
+      <IconSearch />
+    </button>
+
+    <button
+      class="group *:ease relative z-20 flex h-6 w-8 flex-col justify-between *:h-0.5 *:w-full *:bg-white *:transition-all *:duration-300 lg:hidden"
+      id="menu-btn"
+      aria-label="Menu"
+      aria-controls="menu"
+      aria-expanded="false"
+    >
+      <span
+        class="group-aria-expanded:translate-y-[10.5px] group-aria-expanded:rotate-45"
+      ></span>
+      <span class="group-aria-expanded:opacity-0"></span>
+      <span
+        class="group-aria-expanded:-translate-y-[10.5px] group-aria-expanded:-rotate-45"
+      ></span>
+    </button>
+
+    <!-- Navigation -->
+    <nav
+      class="visible fixed inset-0 z-10 bg-indigo text-2xl text-white opacity-100 transition-all duration-300 ease-in-out max-lg:aria-hidden:invisible max-lg:aria-hidden:opacity-0 lg:relative lg:flex lg:items-center lg:bg-transparent lg:text-sm lg:font-bold lg:tracking-wide lg:text-black lg:uppercase lg:opacity-100"
+      id="menu"
+      aria-hidden="true"
+    >
+      <ul
+        class="mx-16 mt-[25vh] *:relative *:overflow-hidden lg:m-0 lg:flex *:lg:before:absolute *:lg:before:bottom-0 *:lg:before:left-0 *:lg:before:h-2 *:lg:before:w-full *:lg:before:translate-y-2 *:lg:before:bg-black *:lg:before:transition-all *:lg:before:duration-300 *:lg:before:ease-in-out *:lg:hover:before:translate-y-0"
+      >
+        <li>
+          <a class="block px-5 py-4 lg:py-8" href="/ovsk2ybob0vye6o"
+            >Le conservatoire</a
+          >
+        </li>
+        <li>
+          <a class="block px-5 py-4 lg:py-8" href="/jcojqb2t23v23ok"
+            >Enseignements</a
+          >
+        </li>
+        <li>
+          <a class="block px-5 py-4 lg:py-8" href="/agenda">Agenda</a>
+        </li>
+        <li>
+          <a class="block px-5 py-4 lg:py-8" href="/vmvhtgj92xtun6u">Contact</a>
+        </li>
+        <li>
+          <a
+            class="block px-5 py-4 lg:bg-black lg:px-8 lg:py-8 lg:text-white"
+            href="/owvjomdsz9hkg87">S'inscrire</a
+          >
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<script src="../js/header.js"></script>
+```
+
+### Correspondance liens / pages
+
+Chaque lien du menu correspond à une page créée dans PocketBase :
+
+| Label du menu | URL | ID PocketBase | Page correspondante |
+|---------------|-----|---------------|---------------------|
+| Le conservatoire | `/ovsk2ybob0vye6o` | `ovsk2ybob0vye6o` | Page "À propos" |
+| Enseignements | `/jcojqb2t23v23ok` | `jcojqb2t23v23ok` | Page "Enseignements" |
+| Agenda | `/agenda` | - | Page statique |
+| Contact | `/vmvhtgj92xtun6u` | `vmvhtgj92xtun6u` | Page "Contact" |
+| S'inscrire | `/owvjomdsz9hkg87` | `owvjomdsz9hkg87` | Page "Inscription" |
+
+### Récupérer les IDs de vos pages
+
+Pour obtenir les IDs de vos pages PocketBase :
+
+1. **Via l'interface admin** :
+   - Ouvrez PocketBase Admin (`http://127.0.0.1:8090/_/`)
+   - Accédez à la collection `page`
+   - Cliquez sur une page pour voir ses détails
+   - L'ID est affiché dans l'URL ou dans le champ `id`
+
+2. **Via l'API** :
+   - Accédez à `http://127.0.0.1:8090/api/collections/page/records`
+   - Vous verrez un JSON avec toutes les pages et leurs IDs
+
+3. **Via le code** :
+   ```js
+   // Dans backend.mjs (temporaire, pour debug)
+   const pages = await getCollection("page");
+   pages.forEach(page => {
+     console.log(`${page.title}: ${page.id}`);
+   });
+   ```
+
+### Limitations de cette approche
+
+#### Inconvénients des IDs comme URLs
+
+- ❌ **Peu lisibles** : `/ovsk2ybob0vye6o` n'est pas parlant pour l'utilisateur
+- ❌ **Impossible à mémoriser** : difficile de retenir ou partager l'URL
+- ❌ **SEO sous-optimal** : les moteurs de recherche préfèrent les URLs descriptives
+- ❌ **Pas de contexte** : l'URL ne donne aucune indication sur le contenu
+
+#### Avantages temporaires
+
+- ✅ **Simple à implémenter** : pas de gestion de slug à mettre en place
+- ✅ **Unique par conception** : les IDs PocketBase sont toujours uniques
+- ✅ **Pas de collision** : aucun risque de conflit entre pages
+
+### Solution future : les slugs automatiques
+
+Dans un prochain chapitre, nous verrons comment :
+
+1. Ajouter un champ `slug` dans PocketBase
+2. Générer automatiquement des slugs à partir des titres (`"Le Conservatoire"` → `"le-conservatoire"`)
+3. Modifier `getStaticPaths()` pour utiliser les slugs au lieu des IDs
+4. Mettre à jour les liens du menu pour utiliser les slugs
+
+**Exemple d'URLs avec slugs :**
+
+```astro
+<li>
+  <a href="/le-conservatoire">Le conservatoire</a>
+</li>
+<li>
+  <a href="/enseignements">Enseignements</a>
+</li>
+<li>
+  <a href="/contact">Contact</a>
+</li>
+```
+
+Cette approche offrira des URLs beaucoup plus propres et professionnelles, tout en restant faciles à maintenir.
+
+:::tip[Bonne pratique]
+Dans un projet professionnel, les slugs devraient être implémentés dès le début. Nous procédons étape par étape ici pour bien comprendre chaque concept avant d'ajouter de la complexité.
+:::

@@ -1,0 +1,262 @@
+---
+title: Composant Button
+description: Créer un composant Button avec variantes, tailles et états
+---
+
+import { Image } from 'astro:assets';
+import buttonMobile from "../../../assets/button-mobile.webp";
+import buttonDesktop from "../../../assets/button-desktop.webp";
+
+:::note[Branche Git]
+**Branche :** [13.-Composant-Button](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/13.-Composant-Button)  
+**N° :** 13
+:::
+
+Le composant Button est un bouton réutilisable qui propose plusieurs variantes de style (default, dark, outlined). C'est la première fois que nous introduisons le concept de **variants**, un pattern de design system permettant de créer des variations d'un même composant avec des styles différents.
+
+### Composant bouton (version mobile)
+<Image src={buttonMobile} alt="Bouton verion mobile" />
+
+### Composant bouton (version desktop)
+<Image src={buttonDesktop} alt="Bouton verion desktop" />
+
+## Étape 1 : Structure de base et props
+
+Créez le fichier `Button.astro` dans `src/components/` avec la structure de base :
+
+```astro wrap title="src/components/Button.astro"
+---
+import Arrow from "../assets/icones/icon_arrowline.svg";
+const { href, text } = Astro.props;
+---
+
+<a href={href}>
+  <Arrow />
+  {text}
+</a>
+```
+
+**Extraction des props** :
+- `href` : URL de destination du lien
+- `text` : Texte affiché dans le bouton
+
+## Étape 2 : Introduction du système de variants
+
+Le **système de variants** permet de créer différentes versions d'un composant avec des styles prédéfinis. C'est un pattern fondamental en design system.
+
+### Concept des variants
+
+Un variant est une variation de style d'un composant. Au lieu de créer plusieurs composants (`ButtonDefault.astro`, `ButtonDark.astro`, `ButtonOutlined.astro`), on crée un seul composant avec une prop `variant` qui détermine le style appliqué.
+
+**Avantages** :
+- **Cohérence** : Tous les boutons partagent la même structure HTML
+- **Maintenabilité** : Un seul composant à maintenir
+- **Scalabilité** : Ajouter un nouveau variant = ajouter une entrée dans un objet
+- **API claire** : `<Button variant="dark" />` est explicite et lisible
+
+### Implémentation des variants
+
+Ajoutez la prop `variant` et créez l'objet `variantClass` :
+
+```astro wrap title="src/components/Button.astro" ins={4-8} ins=', variant = "default"'
+---
+import Arrow from "../assets/icones/icon_arrowline.svg";
+const { href, text, variant = "default" } = Astro.props;
+const variantClass = {
+  default: "border border-pink hover:inset-ring-8 hover:inset-ring-pink",
+  dark: "bg-black text-white",
+  outlined: "text-white border border-white hover:inset-ring-8 hover:inset-ring-white",
+};
+---
+
+<a href={href}>
+  <Arrow />
+  {text}
+</a>
+```
+
+**Prop variant avec valeur par défaut** :
+- `variant = "default"` : Si aucun variant n'est spécifié, utilise "default"
+- Syntaxe de déstructuration avec valeur par défaut en JavaScript
+
+**Objet variantClass** :
+- Clé = nom du variant (`default`, `dark`, `outlined`)
+- Valeur = chaîne de classes Tailwind pour ce variant
+- Permet de mapper un nom de variant à ses styles
+
+**Détail des variants** :
+
+**`default`** :
+- `border border-pink` : Bordure rose de 1px
+- `hover:inset-ring-8 hover:inset-ring-pink` : Au survol, ombre interne de 8px rose (effet de remplissage)
+
+**`dark`** :
+- `bg-black` : Fond noir
+- `text-white` : Texte blanc
+
+**`outlined`** :
+- `text-white` : Texte blanc
+- `border border-white` : Bordure blanche
+- `hover:inset-ring-8 hover:inset-ring-white` : Au survol, ombre interne blanche
+
+## Étape 3 : Application du variant avec class:list
+
+La directive `class:list` d'Astro permet de combiner plusieurs sources de classes de manière élégante :
+
+```astro wrap title="src/components/Button.astro" ins={12-16} ins=', classes'
+---
+import Arrow from "../assets/icones/icon_arrowline.svg";
+const { href, text, variant = "default", classes } = Astro.props;
+const variantClass = {
+  default: "border border-pink hover:inset-ring-8 hover:inset-ring-pink",
+  dark: "bg-black text-white",
+  outlined: "text-white border border-white hover:inset-ring-8 hover:inset-ring-white",
+};
+---
+
+<a
+  class:list={[
+    "inline-flex items-center gap-4 px-6 py-4 text-xs font-bold tracking-wide uppercase transition duration-300 ease-in-out lg:px-8 lg:py-6 lg:text-sm",
+    variantClass[variant],
+    classes,
+  ]}
+  href={href}
+>
+  <Arrow />
+  {text}
+</a>
+```
+
+**Prop classes** :
+- `classes` : Permet de passer des classes supplémentaires depuis le parent
+- Utile pour des ajustements contextuels sans modifier le composant
+
+### Décomposition de class:list
+
+`class:list` accepte un tableau et combine toutes les classes :
+
+```js wrap
+[
+  // 1. Classes de base (communes à tous les variants)
+  "inline-flex items-center gap-4 px-6 py-4 text-xs font-bold tracking-wide uppercase transition duration-300 ease-in-out lg:px-8 lg:py-6 lg:text-sm",
+  
+  // 2. Classes du variant sélectionné
+  variantClass[variant],  // Ex: "border border-pink hover:shadow-[...]"
+  
+  // 3. Classes personnalisées passées en prop
+  classes,  // Ex: "mt-4 lg:mt-8"
+]
+```
+
+**Comment ça fonctionne** :
+1. Les classes de base sont toujours appliquées
+2. `variantClass[variant]` : Accès à la valeur de l'objet selon la clé `variant`
+   - Si `variant="dark"` → `variantClass["dark"]` → `"bg-black text-white"`
+3. Les classes personnalisées s'ajoutent en dernier
+
+**Exemple d'utilisation** :
+```astro
+<Button variant="dark" href="/contact" text="Contactez-nous" classes="mt-8" />
+```
+
+:::tip[class:list vs class]
+`class:list` est plus puissant que `class` car il :
+- Accepte des tableaux, objets, et valeurs conditionnelles
+- Filtre automatiquement les valeurs `null`, `undefined`, `false`
+- Déduplique les classes en cas de conflit
+- Gère les classes dynamiques élégamment
+
+[Documentation class:list](https://docs.astro.build/fr/reference/directives-reference/#classlist)
+:::
+
+### Détail des classes de base
+
+Analysons les classes communes à tous les variants :
+
+**Layout et positionnement** :
+- `inline-flex` : Conteneur flex inline (s'adapte au contenu)
+- `items-center` : Alignement vertical centré (icône + texte)
+- `gap-4` : Espacement 16px entre l'icône et le texte
+
+**Spacing** :
+- `px-6 py-4` : Padding horizontal 24px, vertical 16px (mobile)
+- `lg:px-8 lg:py-6` : Padding horizontal 32px, vertical 24px (desktop)
+
+**Typographie** :
+- `text-xs` : Taille de texte 12px (mobile)
+- `lg:text-sm` : Taille de texte 14px (desktop)
+- `font-bold` : Graisse de police bold
+- `tracking-wide` : Espacement des lettres augmenté (letter-spacing)
+- `uppercase` : Texte en majuscules
+
+**Animation** :
+- `transition` : Active les transitions CSS
+- `duration-300` : Durée 300ms
+- `ease-in-out` : Courbe d'accélération progressive
+
+:::note[Responsive design]
+Les classes préfixées `lg:` s'appliquent uniquement sur les écrans ≥ 1024px. Tailwind adopte une approche "mobile-first" : les classes sans préfixe sont pour mobile, puis on ajoute des breakpoints pour les écrans plus grands.
+:::
+
+## Étape 4 : Utilisation du composant
+
+Utilisez le composant Button avec différents variants :
+
+```astro wrap
+---
+import Button from "../components/Button.astro";
+---
+
+<!-- Variant default -->
+<Button 
+  variant="default" 
+  href="/evenements" 
+  text="Voir les événements" 
+/>
+
+<!-- Variant dark -->
+<Button 
+  variant="dark" 
+  href="/contact" 
+  text="Nous contacter" 
+/>
+
+<!-- Variant outlined (sur fond sombre) -->
+<Button 
+  variant="outlined" 
+  href="/inscription" 
+  text="S'inscrire" 
+/>
+
+<!-- Avec classes personnalisées -->
+<Button 
+  variant="default" 
+  href="/billetterie" 
+  text="Réserver" 
+  classes="mt-8 lg:mt-12"
+/>
+```
+
+**Omission de la prop variant** :
+```astro
+<!-- Équivalent à variant="default" -->
+<Button href="/evenements" text="Voir les événements" />
+```
+
+## Récapitulatif
+
+**Pattern variants - Points clés** :
+- Un seul composant pour plusieurs variations de style
+- Objet JavaScript mappant des noms vers des classes CSS
+- Accès dynamique avec `variantClass[variant]`
+- Extensibilité : ajouter un variant = ajouter une ligne
+- API claire et cohérente pour les utilisateurs du composant
+
+**Avantages du pattern** :
+- **Cohérence** : Structure HTML identique pour tous les variants
+- **Maintenabilité** : Un seul fichier à maintenir
+- **Type-safety** : Facile à typer avec TypeScript (union de strings)
+- **Scalabilité** : Ajout de variants sans modification structurelle
+- **Lisibilité** : `<Button variant="dark" />` est auto-documenté
+
+Nous utiliserons ce composant au moment de la construction de la page d'accueil dans laquelle il est utilisé à plusieurs reprises.

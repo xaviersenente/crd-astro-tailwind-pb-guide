@@ -1,0 +1,128 @@
+---
+title: Modèles de données
+description: Définir les collections et leurs champs
+---
+
+import { Image } from "astro:assets";
+import { LinkCard } from "@astrojs/starlight/components";
+
+import pocketbase01 from "../../../assets/pocketbase-01.avif";
+import pocketbase02 from "../../../assets/pocketbase-02.avif";
+import pocketbase03 from "../../../assets/pocketbase-03.avif";
+import pocketbase04 from "../../../assets/pocketbase-04.avif";
+import pocketbase05 from "../../../assets/pocketbase-05.avif";
+import collectionEvent from "../../../assets/collection-event.webp";
+import collectionPage from "../../../assets/collection-page.webp";
+import fieldImage from "../../../assets/field-image.webp";
+import pbDiagram from "../../../assets/pb_diagram.png";
+
+
+## Les collections et les tables
+
+Les collections représentent les données de votre application. Il s'agit de tables simples qui sont générées automatiquement avec le nom de la collection et les champs (propriétés ou colonnes des tables). Une seule entrée d'une collection est appelée **enregistrement**, c'est-à-dire une seule ligne dans la table.
+
+:::note[Documentation officielle]
+Pour plus de détails sur chaque type de champ, consultez la [documentation PocketBase sur les collections](https://pocketbase.io/docs/collections/#fields).
+:::
+
+## Collection des évènements
+
+Créez la collection `event`. Cette collection stockera les évènements du conservatoire (concerts, auditions, masterclasses, etc.).
+
+<Image src={collectionEvent} alt="Interface PocketBase" />
+
+### Champs de la collection event
+
+| Champ         | Type     | Options                                   |
+| ------------- | -------- | ----------------------------------------- |
+| `published`   | Bolean   |                                           |
+| `title`       | Text     | Required, Min: 3, Max: 200                |
+| `date`        | Date     | Required                                  |
+| `imgFile`     | File     | Required / Single / jpg, webp / Thumb sizes: 1024x1024, 1024x680 |
+| `imgAlt`      | Text     | Required                                  |
+| `lieu`        | Select   | Conservatoire / Maison du peuple          |
+| `category`    | Select   | Danse / Théâtre / Musique.                |
+| `excerpt`     | Text     | Required / Max: 200                       |
+| `description` | Rich editor  | Required                                 |
+| `created`     | create   |                                  |
+| `updated`     | create/update |                                  |
+
+
+<Image src={fieldImage} alt="Création de la collection event" />
+
+### Configuration spécifique
+
+:::tip[Configuration du champ imgUrl]
+Pour le champ `imgUrl`, autorisez uniquement le **JPEG** et le **Webp** (pris en compte ensuite pour le redimensionnement) et ajoutez deux tailles d'image :
+
+- 1024x1024
+- 1024x680
+  :::
+
+## Collection `page`
+
+La collection `page` stocke les pages statiques du site (À propos, Contact, Mentions légales, etc.).
+
+<Image src={collectionPage} alt="Création de la collection page" />
+
+### Champs de la collection page
+
+| Champ            | Type   | Options                                   |
+| ---------------- | ------ | ----------------------------------------- |
+| `published`      | Bolean |                                           |
+| `title`          | Text   | Required, Max: 200                        |
+| `imgFile`        | File     | Required / Single / jpg, webp / Thumb sizes: 1024x1024, 1024x680 |
+| `imgAlt`         | Text     | Required                                  |
+| `excerpt`        | Text   | Max: 300                                  |
+| `description`    | Rich editor  | Required                                 |
+| `created`        | create   |                                  |
+| `updated`        | create/update |                                  |
+
+
+
+### Différence entre `event` et `page`
+
+| Aspect        | Collection `event`          | Collection `page`      |
+| ------------- | ---------------------------- | ---------------------- |
+| **Usage**     | Contenu dynamique avec dates | Contenu statique       |
+| **Fréquence** | Créés régulièrement          | Rarement modifiés      |
+| **Durée**     | Éphémère (événement passé)   | Permanent              |
+| **Ordre**     | Chronologique (date)         | Personnalisé (order)   |
+| **Exemples**  | Concerts, auditions          | À propos, Contact, CGU |
+
+
+
+## Diagramme UML
+
+Vous pouvez générer un diagramme UML de votre base de données PocketBase en utilisant l'application suivante :
+
+<LinkCard
+  title="PocketBaseUML"
+  href="https://pocketbase-uml.github.io/"
+  description="Visualize your PocketBase databases"
+/>
+
+:::tip[Export de la collection]
+Utilisez l'export de la collection générée par l'API : [http://127.0.0.1:8090/\_/#/settings/export-collections](http://127.0.0.1:8090/_/#/settings/export-collections)
+:::
+
+<Image src={pbDiagram} alt="Diagramme UML de la base de données" />
+
+
+
+## Création des données de test
+
+### Évènements de test
+
+Renseignez **au moins 7 évènements** pour tester votre application.
+
+<Image src={pocketbase05} alt="Évènements de test créés" />
+
+### Pages de test
+
+Créez au moins 3 pages statiques :
+
+- **À propos** : Présentation du conservatoire
+- **Contact** : Coordonnées et formulaire
+- **Mentions légales** : Informations légales
+

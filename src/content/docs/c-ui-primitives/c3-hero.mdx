@@ -1,0 +1,390 @@
+---
+title: Composant Hero
+description: Section hero responsive avec titre, sous-titre, chapo et image de fond
+---
+
+import { Image } from 'astro:assets';
+
+import { LinkCard, CardGrid } from "@astrojs/starlight/components";
+
+import heroVersion1 from "../../../assets/hero-version-1.webp";
+import heroVersion2 from "../../../assets/hero-version-2.webp";
+import heroVersion3 from "../../../assets/hero-version-3.webp";
+import heroVersion4 from "../../../assets/hero-version-4.webp";
+import heroProps from "../../../assets/hero-props.webp";
+import chapoIndex from "../../../assets/chapo-index.webp";
+import chapoPage from "../../../assets/chapo-page.webp";
+import heroSlot from "../../../assets/hero-slot.webp";
+import heroPropsGrid from "../../../assets/hero-props-grid.webp";
+
+:::note[Branche Git]
+**Branche :** [9.-Composant-Hero](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/9.-Composant-Hero)  
+**N° :** 9
+:::
+
+Contrairement aux composants [Footer](c1-footer) et [Header](c2-header) qui restent identiques sur toutes les pages, le Hero est notre premier composant véritablement dynamique. Son contenu doit s'adapter au contexte : page d'accueil avec disiciplines et icônes, pages standards avec chapo descriptif, pages événements avec visuels spécifiques... Cette flexibilité nécessite une approche différente de celle des composants statiques précédents.
+
+<CardGrid>
+  <Image src={heroVersion1} alt="Hero" />
+  <Image src={heroVersion2} alt="Hero" />
+  <Image src={heroVersion3} alt="Hero" />
+  <Image src={heroVersion4} alt="Hero" />
+</CardGrid>
+
+## Étape 1 : Structure de base avec titre et sous-titre
+
+Créez le fichier `Hero.astro` dans le répertoire `src/components`.
+
+<Image src={heroProps} alt="Hero" />
+
+Commençons par définir les props et le rendu conditionnel du sous-titre :
+
+```astro wrap title="src/components/Hero.astro"
+---
+const { title, subTitle } = Astro.props;
+---
+
+<div>
+  <div>
+    <h1>{title}</h1>
+    {
+      subTitle && (
+        <h2 class="font-sans text-sm font-bold uppercase lg:text-lg">
+          {subTitle}
+        </h2>
+      )
+    }
+  </div>
+</div>
+```
+
+**Props du composant** :
+- `title` : Le titre principal (obligatoire)
+- `subTitle` : Le sous-titre (optionnel)
+
+**Rendu conditionnel** :
+- `subTitle &&` : Affiche le `<h2>` uniquement si `subTitle` existe
+- Cette syntaxe JSX évite de rendre un élément vide
+
+**Styles du sous-titre** :
+- `font-sans text-sm lg:text-lg` : Typographie responsive (14px → 18px)
+- `font-bold uppercase` : Gras et majuscules pour contraste visuel avec le titre
+
+## Étape 2 : Ajout des slots nommés
+
+Certains contenus sont trop différents et trop complexes pour être introduits via des `props`. 
+
+**Chapo de la page d'accueil** = Icônes + textes
+
+<Image src={chapoIndex} alt="Chapo index" />
+
+**Chapo des pages standards** = paragraphe d'introduction
+
+<Image src={chapoPage} alt="Chapo page" />
+
+C'est là qu'interviennent les `slots`. Les `slots` permettent d'injecter **n'importe quel contenu HTML/Astro valide**, rendant le Hero extrêmement flexible tout en conservant une structure et un style cohérents.
+
+<LinkCard
+  title="Les slots"
+  href="https://docs.astro.build/fr/basics/astro-components/#les-slots"
+  description="Balise substituable par du contenu HTML externe, permettant d’injecter des éléments enfants depuis d’autres fichiers dans un modèle de composant."
+/>
+
+:::tip[Utilisation des slots nommés]
+Les slots nommés permettent d'avoir plusieurs zones de contenu personnalisable dans un composant. Exemple d'utilisation :
+```astro wrap
+<Hero title="Mon titre">
+  <p slot="chapo">Texte d'introduction simple</p>
+  <Picture slot="image" src={monImage} alt="Description" />
+</Hero>
+```
+:::
+
+Voici les zones du Hero qui doivent être "personnalisables" :
+
+<Image src={heroSlot} alt="Hero structure" />
+
+**Slot `chapo`** : Le contenu de présentation varie selon le contexte
+- Navigation interactive avec icônes et composants SVG
+- Paragraphe simple de description
+
+**Slot `image`** : Les sources et traitements d'images diffèrent
+- Images statiques importées localement
+- Composants d'image spécialisés (`<Picture>`, `<ImagePB>`)
+
+**Slot `patterns`** : Les éléments décoratifs sont optionnels et contextuels
+- Motifs SVG animés avec effets de fusion CSS
+- Souvent omis pour un design sobre
+
+Ajoutons les slots pour le chapo, l'image de fond et les éléments décoratifs :
+
+```astro wrap title="src/components/Hero.astro" ins={17-22}
+---
+const { title, subTitle } = Astro.props;
+---
+
+<div>
+  <div>
+    <h1>{title}</h1>
+    {
+      subTitle && (
+        <h2 class="font-sans text-sm font-bold uppercase lg:text-lg">
+          {subTitle}
+        </h2>
+      )
+    }
+  </div>
+
+  <div>
+    <slot name="chapo" />
+  </div>
+
+  <slot name="image" />
+  <slot name="patterns" />
+</div>
+```
+
+Dans les chapitres suivants, nous verrons des utilisations concrètes du Hero avec différents types de contenu adaptés aux besoins spécifiques de la page d'accueil et des pages dynamiques.
+
+## Étape 3 : Version mobile
+
+Ajoutons les styles pour la version mobile avec une grille verticale plein écran :
+
+```astro wrap title="src/components/Hero.astro" ins='class="grille relative grid h-screen grid-rows-[4fr_1fr] bg-indigo"' ins='class="z-2 my-12 space-y-8 self-end text-white"' ins='class="relative z-1 row-start-2 -mx-6 flex items-center bg-white px-6 text-xl leading-normal"'
+---
+const { title, subTitle } = Astro.props;
+---
+
+<div
+  class="grille relative grid h-screen grid-rows-[4fr_1fr] bg-indigo"
+>
+  <div class="z-2 my-12 space-y-8 self-end text-white">
+    <h1>{title}</h1>
+    {
+      subTitle && (
+        <h2 class="font-sans text-sm font-bold uppercase lg:text-lg">
+          {subTitle}
+        </h2>
+      )
+    }
+  </div>
+
+  <div
+    class="relative z-1 row-start-2 -mx-6 flex items-center bg-white px-6 text-xl leading-normal"
+  >
+    <slot name="chapo" />
+  </div>
+
+  <slot name="image" />
+  <slot name="patterns" />
+</div>
+```
+
+**Grille principale** :
+- `grille` : Classe personnalisée définie dans `global.css` pour la grille 12 colonnes
+- `relative` : Contexte de positionnement pour les éléments enfants
+- `grid h-screen` : Grille qui occupe toute la hauteur de l'écran (100vh)
+- `grid-rows-[4fr_1fr]` : Divise en 2 lignes avec ratio 4:1 (titre prend 80%, chapo 20%)
+- `bg-indigo` : Ajout de la couleur indigo en fond
+
+:::note[Unité fractionnelle `fr`]
+L'unité `fr` (fraction) divise l'espace disponible proportionnellement. `[4fr_1fr]` signifie que la première ligne prend 80% de l'espace et la seconde 20%.
+:::
+
+**Zone titre** :
+- `z-2` : Index z pour être au-dessus de l'image (z-index: 2)
+- `my-12 space-y-8` : Marges verticales de 48px et espacement entre titre/sous-titre de 32px
+- `self-end` : Aligne le contenu en bas de sa zone de grille
+- `text-white` : Texte blanc pour contraster avec l'image de fond
+
+**Zone chapo** :
+- `relative z-1` : Sous le titre (z-index: 1) mais au-dessus de l'image
+- `row-start-2` : Se place sur la deuxième ligne de la grille
+- `-mx-6` : Marges négatives pour sortir du padding du `.grille` (pleine largeur)
+- `px-6` : Padding horizontal interne de 24px
+- `flex items-center` : Centre le texte verticalement
+- `bg-white` : Fond blanc
+- `text-xl leading-normal` : Taille de texte 20px avec interlignage normal
+
+## Étape 4 : Version desktop
+
+<Image src={heroPropsGrid} alt="Chapo page" />
+
+Ajoutons les styles responsive pour adapter la mise en page sur grand écran :
+
+```astro wrap title="src/components/Hero.astro" ins='lg:grid-rows-[3fr_1fr]' ins='lg:col-span-9' ins='lg:col-span-9 lg:mx-0 lg:pl-0 lg:text-3xl lg:before:absolute lg:before:top-0 lg:before:ml-[-100%] lg:before:h-full lg:before:w-full lg:before:bg-white'
+---
+const { title, subTitle } = Astro.props;
+---
+
+<div
+  class="grille relative grid h-screen grid-rows-[4fr_1fr] bg-indigo lg:grid-rows-[3fr_1fr]"
+>
+  <div class="z-2 my-12 space-y-8 self-end text-white lg:col-span-9">
+    <h1>{title}</h1>
+    {
+      subTitle && (
+        <h2 class="font-sans text-sm font-bold uppercase lg:text-lg">
+          {subTitle}
+        </h2>
+      )
+    }
+  </div>
+
+  <div
+    class="relative z-1 row-start-2 -mx-6 flex items-center bg-white px-6 text-xl leading-normal lg:col-span-9 lg:mx-0 lg:pl-0 lg:text-3xl lg:before:absolute lg:before:top-0 lg:before:ml-[-100%] lg:before:h-full lg:before:w-full lg:before:bg-white"
+  >
+    <slot name="chapo" />
+  </div>
+
+  <slot name="image" />
+  <slot name="patterns" />
+</div>
+```
+
+**Grille desktop** :
+- `lg:grid-rows-[3fr_1fr]` : Change le ratio à 3:1 sur desktop (titre 75%, chapo 25%)
+
+**Zone titre desktop** :
+- `lg:col-span-9` : Occupe 9 colonnes sur 12 pour créer une marge à droite
+
+**Zone chapo desktop** :
+- `lg:col-span-9` : Aligné avec le titre (9 colonnes)
+- `lg:mx-0 lg:pl-0` : Réinitialise les marges négatives et padding du mobile
+- `lg:text-3xl` : Augmente la taille du texte à 30px
+
+**Pseudo-élément d'extension** :
+- `lg:before:absolute` : Crée un pseudo-élément `::before` positionné
+- `lg:before:top-0 lg:before:h-full lg:before:w-full` : Même dimensions que le parent
+- `lg:before:ml-[-100%]` : Décale à gauche de 100% de sa largeur
+- `lg:before:bg-white` : Fond blanc pour étendre visuellement la zone blanche vers la gauche
+
+:::tip[Technique du pseudo-élément]
+Le `::before` permet d'étendre visuellement le fond blanc vers la gauche sur desktop sans affecter le contenu ou la structure HTML. Cela crée un effet de débordement élégant hors de la grille 12 colonnes, tout en gardant le contenu aligné.
+:::
+
+## Étape 5 : Intégration du composant dans la page d'accueil
+
+Maintenant que le composant Hero est créé, testons-le en l'intégrant dans la page d'accueil. Nous allons utiliser le slot `chapo` pour afficher un bloc avec des icônes représentant les trois disciplines enseignées au conservatoire.
+
+**Intégration du Hero** :
+
+```astro wrap title="src/pages/index.astro" ins={3, 5-7, 15-28} del={11-14}
+---
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
+
+import IconMusique from "../assets/icones/icon_musique.svg";
+import IconTheatre from "../assets/icones/icon_theatre.svg";
+import IconDanse from "../assets/icones/icon_danse.svg";
+---
+
+<Layout>
+  <h1>Conservatoire Henri Dutilleux</h1>
+  <h2>Titre de niveau 2</h2>
+  <h3>Titre de niveau 3</h3>
+  <p>Texte standard</p>
+  <Hero
+    title="Conservatoire Henri Dutilleux"
+    subTitle="Conservatoire à rayonnement départemental du grand belfort"
+  >
+    <div class="flex-1 font-mono lg:text-3xl" slot="chapo">
+      <ul
+        class="grid grid-cols-3 gap-12 *:flex *:flex-col *:items-center *:gap-4 *:lg:flex-row"
+      >
+        <li><IconMusique /> Musique</li>
+        <li><IconTheatre /> Théâtre</li>
+        <li><IconDanse /> Danse</li>
+      </ul>
+    </div>
+  </Hero>
+</Layout>
+```
+
+**Changements apportés** :
+
+1. **Import du composant Hero** : `import Hero from "../components/Hero.astro"`
+
+2. **Import des icônes SVG** : Les trois icônes représentant les disciplines (musique, théâtre, danse)
+
+3. **Utilisation du composant** :
+   - Props `title` et `subTitle` pour le contenu textuel principal
+   - Slot `chapo` contenant une liste interactive avec icônes
+
+4. **Styles du chapo** :
+   - `flex-1` : Prend tout l'espace disponible
+   - `font-mono` : Utilise la police monospace
+   - `lg:text-3xl` : Taille de texte responsive (20px → 30px)
+   - `grid grid-cols-3 gap-12` : Grille 3 colonnes avec espacement
+   - `*:flex *:flex-col *:items-center` : Chaque `<li>` en flexbox vertical centré
+   - `*:lg:flex-row` : Passage en flexbox horizontal sur desktop
+
+:::note[Slots image et patterns]
+Pour l'instant, nous n'utilisons que le slot `chapo`. Les slots `image` et `patterns` seront intégrés dans les chapitres suivants pour ajouter l'image de fond et les éléments décoratifs.
+:::
+
+## Étape 6 : Ajout des métadonnées SEO
+
+Pour améliorer le référencement de la page, nous devons ajouter des métadonnées SEO (titre et description) au composant Layout. Plutôt que de passer ces informations directement sous forme de chaînes de caractères dans les props, il est préférable de les définir comme variables. Cette approche présente plusieurs avantages :
+
+**Pourquoi utiliser des variables ?**
+
+1. **Réutilisabilité** : Le titre peut être utilisé à la fois pour le SEO (`<Layout>`) et pour l'affichage visuel (`<Hero>`)
+2. **Cohérence** : Garantit que le titre affiché et le titre SEO sont identiques
+3. **Maintenance** : Une seule modification met à jour tous les usages
+4. **Lisibilité** : Le code est plus clair avec des variables nommées explicitement
+5. **Évolutivité** : Facilite l'ajout de logique (traductions, transformations, etc.)
+
+**Version améliorée avec variables** :
+
+```astro wrap title="src/pages/index.astro" ins={9-11,19} del={15-18}
+---
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
+
+import IconMusique from "../assets/icones/icon_musique.svg";
+import IconTheatre from "../assets/icones/icon_theatre.svg";
+import IconDanse from "../assets/icones/icon_danse.svg";
+
+const title = "Conservatoire Henri Dutilleux";
+const subTitle = "Conservatoire à Rayonnement Départemental du Grand Belfort";
+const description = "Le Conservatoire Henri Dutilleux de Belfort vous accueille pour découvrir la musique, la danse et le théâtre.";
+---
+
+<Layout title={title} description={description}>
+  <Hero
+    title="Conservatoire Henri Dutilleux"
+    subTitle="Conservatoire à rayonnement départemental du grand belfort"
+  >
+  <Hero title={title} subTitle={subTitle}>
+    <div class="flex-1 font-mono lg:text-3xl" slot="chapo">
+      <ul
+        class="grid grid-cols-3 gap-12 *:flex *:flex-col *:items-center *:gap-4 *:lg:flex-row"
+      >
+        <li><IconMusique /> Musique</li>
+        <li><IconTheatre /> Théâtre</li>
+        <li><IconDanse /> Danse</li>
+      </ul>
+    </div>
+  </Hero>
+</Layout>
+```
+
+**Définition des variables** :
+- `title` : Utilisé pour le SEO et l'affichage dans le Hero
+- `subTitle` : Sous-titre spécifique au Hero (non utilisé pour le SEO)
+- `description` : Meta description pour les moteurs de recherche
+
+**Transmission aux composants** :
+- `<Layout title={title} description={description}>` : Props SEO pour les balises `<meta>`
+- `<Hero title={title} subTitle={subTitle}>` : Props visuelles pour l'affichage
+
+:::tip[Bonne pratique SEO]
+Le titre (`title`) et la description (`description`) définis ici apparaîtront dans :
+- L'onglet du navigateur
+- Les résultats de recherche Google
+- Les aperçus sur les réseaux sociaux (avec Open Graph)
+
+Assurez-vous que la `description` soit concise (150-160 caractères) et décrive précisément le contenu de la page.
+:::
+

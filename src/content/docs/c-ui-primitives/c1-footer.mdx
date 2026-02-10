@@ -1,0 +1,397 @@
+---
+title: Grille & composant Footer
+description: Création d'un pied de page avec grille personnalisée
+---
+
+import { Image } from 'astro:assets';
+import footerGrid from "../../../assets/footer-grid.webp";
+
+:::note[Branche Git]
+**Branche :** [7.-Composant-Footer](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/7.-Composant-Footer)  
+**N° :** 7
+:::
+
+Le Footer est un composant essentiel présent sur toutes les pages du site. Il contient les informations de contact, les liens de navigation secondaire et les réseaux sociaux. Nous allons le construire progressivement en suivant l'approche **mobile-first**, puis nous ajouterons une grille personnalisée pour la version desktop.
+
+## Étape 1 : Structure HTML de base
+
+Commençons par définir la structure sémantique du footer avec les 5 sections principales :
+
+```astro wrap title="src/components/Footer.astro"
+---
+---
+<footer>
+  <!-- 1. Logo -->
+  <a href="/" aria-label="Accueil">
+    Logo
+  </a>
+  
+  <!-- 2. Navigation -->
+  <nav>
+    <h3>Menu</h3>
+    <ul>
+      <li><a href="/agenda">Agenda</a></li>
+      <li><a href="/contact">Contact et accès</a></li>
+    </ul>
+  </nav>
+
+  <!-- 3. Contact -->
+  <div>
+    <h3>Contact</h3>
+    <address>
+      1 rue Paul Koepfler<br />90000 Belfort<br />
+      <a href="tel:0384542727">03 84 54 27 27</a><br />
+      <a href="mailto:conservatoire@agglo-belfort.fr">conservatoire@agglo-belfort.fr</a>
+    </address>
+  </div>
+
+  <!-- 4. Logo partenaire -->
+  <div>
+    Logo Grand Belfort
+  </div>
+
+  <!-- 5. Réseaux sociaux -->
+  <div>
+    <h3>Nous suivre</h3>
+    <ul>
+      <li><a href="#" aria-label="facebook">Facebook</a></li>
+      <li><a href="#" aria-label="instagram">Instagram</a></li>
+      <li><a href="#" aria-label="twitter">Twitter</a></li>
+      <li><a href="#" aria-label="youtube">YouTube</a></li>
+    </ul>
+  </div>
+</footer>
+```
+
+**Points clés** :
+- Utilisation de la balise sémantique `<footer>`
+- `<nav>` pour les liens de navigation
+- `<address>` pour les informations de contact (retire le style italique par défaut)
+- `aria-label` pour l'accessibilité des liens icônes
+
+## Étape 2 : Import des assets et données
+
+Ajoutons les imports des icônes SVG :
+
+```astro wrap title="src/components/Footer.astro" ins={2-7} collapse={11-44}
+---
+import LogoFooter from '../assets/icones/icon_logoFooter.svg';
+import LogoGrandBelfort from '../assets/icones/logo-grand-belfort.svg';
+import IconFacebook from '../assets/icones/icon_facebook.svg';
+import IconInstagram from '../assets/icones/icon_instagram.svg';
+import IconTwitter from '../assets/icones/icon_twitter.svg';
+import IconYoutube from '../assets/icones/icon_youtube.svg';
+---
+
+<footer>
+  <a href="/" aria-label="Accueil">
+    Logo
+  </a>
+  
+  <nav>
+    <h3>Menu</h3>
+    <ul>
+      <li><a href="/agenda">Agenda</a></li>
+      <li><a href="/contact">Contact et accès</a></li>
+    </ul>
+  </nav>
+
+  <div>
+    <h3>Contact</h3>
+    <address>
+      1 rue Paul Koepfler<br />90000 Belfort<br />
+      <a href="tel:0384542727">03 84 54 27 27</a><br />
+      <a href="mailto:conservatoire@agglo-belfort.fr">conservatoire@agglo-belfort.fr</a>
+    </address>
+  </div>
+
+  <div>
+    Logo Grand Belfort
+  </div>
+
+  <div>
+    <h3>Nous suivre</h3>
+    <ul>
+      <li><a href="#" aria-label="facebook">Facebook</a></li>
+      <li><a href="#" aria-label="instagram">Instagram</a></li>
+      <li><a href="#" aria-label="twitter">Twitter</a></li>
+      <li><a href="#" aria-label="youtube">YouTube</a></li>
+    </ul>
+  </div>
+</footer>
+```
+
+**Structure du tableau `socialLinks`** :
+- `url` : Lien vers le réseau social
+- `label` : Texte pour l'accessibilité
+- `Icon` : Composant SVG importé
+
+## Étape 3 : Intégration des composants SVG
+
+Remplaçons les textes par les composants SVG importés :
+
+```astro wrap title="src/components/Footer.astro" ins={9-14, 20, 42, 52-58} del={19, 41, 48-51} collapse={23-38}
+---
+import LogoFooter from '../assets/icones/icon_logoFooter.svg';
+import LogoGrandBelfort from '../assets/icones/logo-grand-belfort.svg';
+import IconFacebook from '../assets/icones/icon_facebook.svg';
+import IconInstagram from '../assets/icones/icon_instagram.svg';
+import IconTwitter from '../assets/icones/icon_twitter.svg';
+import IconYoutube from '../assets/icones/icon_youtube.svg';
+
+const socialLinks = [
+  { url: 'https://facebook.com', label: 'facebook', Icon: IconFacebook },
+  { url: 'https://instagram.com', label: 'instagram', Icon: IconInstagram },
+  { url: 'https://twitter.com', label: 'twitter', Icon: IconTwitter },
+  { url: 'https://youtube.com', label: 'youtube', Icon: IconYoutube },
+];
+---
+
+<footer>
+  <a href="/" aria-label="Accueil">
+    Logo
+    <LogoFooter/>
+  </a>
+  
+  <nav>
+    <h3>Menu</h3>
+    <ul>
+      <li><a href="/agenda">Agenda</a></li>
+      <li><a href="/contact">Contact et accès</a></li>
+    </ul>
+  </nav>
+
+  <div>
+    <h3>Contact</h3>
+    <address>
+      1 rue Paul Koepfler<br />90000 Belfort<br />
+      <a href="tel:0384542727">03 84 54 27 27</a><br />
+      <a href="mailto:conservatoire@agglo-belfort.fr">conservatoire@agglo-belfort.fr</a>
+    </address>
+  </div>
+
+  <div>
+    Logo Grand Belfort
+    <LogoGrandBelfort/>
+  </div>
+
+  <div>
+    <h3>Nous suivre</h3>
+    <ul>
+      <li><a href="#" aria-label="facebook">Facebook</a></li>
+      <li><a href="#" aria-label="instagram">Instagram</a></li>
+      <li><a href="#" aria-label="twitter">Twitter</a></li>
+      <li><a href="#" aria-label="youtube">YouTube</a></li>
+      {socialLinks.map(({ url, label, Icon }) => (
+        <li>
+          <a href={url} aria-label={label}>
+            <Icon />
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</footer>
+```
+
+**Utilisation de `.map()`** : Nous itérons sur le tableau `socialLinks` pour générer dynamiquement les liens sociaux avec leurs icônes respectives.
+
+## Étape 4 : Configuration de la grille personnalisée
+
+Avant de styliser le footer, nous devons créer une grille personnalisée dans `src/styles/global.css` :
+
+```css wrap title="src/styles/global.css" ins={10, 31-35} collapse={4-9, 14-28}
+@import "tailwindcss";
+
+@theme {
+  --color-indigo: oklch(26.53% 0.1502 278.05); /* #1d096b */
+  --color-pink: oklch(82.94% 0.1209 30.54); /* #feaa9b */
+
+  --font-sans: "Mulish Variable", sans-serif;
+  --font-mono: "Space Mono", monospace;
+
+  --my-grid: repeat(12, minmax(0, 64px));
+}
+
+@layer base {
+  body {
+    @apply font-sans text-base leading-normal;
+  }
+  h1 {
+    @apply font-mono text-4xl leading-tight lg:text-6xl;
+  }
+  h2 {
+    @apply font-mono text-2xl leading-tight lg:text-4xl;
+  }
+  h3 {
+    @apply my-4 font-sans text-xl leading-tight font-bold;
+  }
+  ::selection {
+    @apply bg-pink;
+  }
+}
+
+@layer components {
+  .grille {
+    @apply px-6 lg:grid lg:grid-cols-(--my-grid) lg:justify-center lg:gap-12;
+  }
+}
+```
+
+**Explication de la grille** :
+- `--my-grid: repeat(12, minmax(0, 64px))` : Crée une grille de 12 colonnes
+  - Chaque colonne a une largeur minimale de 0 et maximale de 64px
+  - Permet une mise en page précise sur desktop
+  
+**La classe `.grille`** :
+- `px-6` : Padding horizontal sur mobile
+- `lg:grid` : Active la grille uniquement sur les grands écrans (≥1024px)
+- `lg:grid-cols-(--my-grid)` : Applique notre grille de 12 colonnes
+- `lg:justify-center` : Centre la grille horizontalement
+- `lg:gap-12` : Espacement entre les colonnes
+
+:::tip[Approche Mobile-first]
+Tailwind CSS encourage de commencer par les styles mobile, puis d'ajouter les modifications pour les écrans plus grands avec les préfixes `md:`, `lg:`, etc. C'est pourquoi les classes sans préfixe s'appliquent à tous les écrans, et les classes préfixées `lg:` s'appliquent uniquement à partir de 1024px.
+:::
+
+<iframe style="width: 100%; height: 450px; border: none" src="https://embed.figma.com/board/ooUqWK7GlrNyKRTQAeGXI6/Grille?node-id=0-1&embed-host=share" allowfullscreen></iframe>
+
+## Étape 5 : Styles mobile (base)
+
+Ajoutons les styles de base qui s'appliqueront sur tous les écrans :
+
+```astro wrap title="src/components/Footer.astro" ins='class="grille space-y-6 text-sm bg-stone-900 py-16 px-6 text-white"' ins='class="block"' ins='class="space-y-3"' ins='class="uppercase text-sm tracking-wide text-stone-400"' ins='class="not-italic"' ins='class="flex gap-4"' ins='class="fill-white"'
+---
+import LogoFooter from '../assets/icones/icon_logoFooter.svg';
+import LogoGrandBelfort from '../assets/icones/logo-grand-belfort.svg';
+import IconFacebook from '../assets/icones/icon_facebook.svg';
+import IconInstagram from '../assets/icones/icon_instagram.svg';
+import IconTwitter from '../assets/icones/icon_twitter.svg';
+import IconYoutube from '../assets/icones/icon_youtube.svg';
+
+const socialLinks = [
+  { url: 'https://facebook.com', label: 'facebook', Icon: IconFacebook },
+  { url: 'https://instagram.com', label: 'instagram', Icon: IconInstagram },
+  { url: 'https://twitter.com', label: 'twitter', Icon: IconTwitter },
+  { url: 'https://youtube.com', label: 'youtube', Icon: IconYoutube },
+];
+---
+
+<footer class="grille space-y-6 text-sm bg-stone-900 py-16 px-6 text-white">
+  <a class="block" href="/" aria-label="Accueil">
+    <LogoFooter/>
+  </a>
+  
+  <nav class="space-y-3">
+    <h3 class="uppercase text-sm tracking-wide text-stone-400">Menu</h3>
+    <ul>
+      <li><a href="/agenda">Agenda</a></li>
+      <li><a href="/contact">Contact et accès</a></li>
+    </ul>
+  </nav>
+
+  <div class="space-y-3">
+    <h3 class="uppercase text-sm tracking-wide text-stone-400">Contact</h3>
+    <address class="not-italic">
+      1 rue Paul Koepfler<br />90000 Belfort<br />
+      <a href="tel:0384542727">03 84 54 27 27</a><br />
+      <a href="mailto:conservatoire@agglo-belfort.fr">conservatoire@agglo-belfort.fr</a>
+    </address>
+  </div>
+
+  <div>
+    <LogoGrandBelfort/>
+  </div>
+
+  <div class="space-y-3">
+    <h3 class="uppercase text-sm tracking-wide text-stone-400">Nous suivre</h3>
+    <ul class="flex gap-4">
+      {socialLinks.map(({ url, label, Icon }) => (
+        <li>
+          <a href={url} aria-label={label}>
+            <Icon class="fill-white"/>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</footer>
+```
+
+**Classes mobile ajoutées** :
+- **Footer** : `space-y-6` (espacement vertical), `bg-stone-900` (fond sombre), `py-16 px-6` (padding), `text-white`
+- **Titres h3** : `uppercase` (majuscules), `tracking-wide` (espacement lettres), `text-stone-400` (couleur grise)
+- **Sections** : `space-y-3` (espacement entre titre et contenu)
+- **Address** : `not-italic` (supprime l'italique par défaut)
+- **Réseaux sociaux** : `flex gap-4` (affichage horizontal avec espacement)
+- **Icônes SVG** : `fill-white` (couleur de remplissage)
+
+## Étape 6 : Styles desktop avec grille
+
+Ajoutons maintenant les classes pour positionner les éléments dans notre grille 12 colonnes :
+
+```astro wrap title="src/components/Footer.astro" ins='lg:space-y-0' ins='lg:col-span-3 lg:col-start-7' ins='lg:col-span-3 lg:col-start-10' ins='class="lg:col-span-3 lg:col-start-7"'
+---
+import LogoFooter from '../assets/icones/icon_logoFooter.svg';
+import LogoGrandBelfort from '../assets/icones/logo-grand-belfort.svg';
+import IconFacebook from '../assets/icones/icon_facebook.svg';
+import IconInstagram from '../assets/icones/icon_instagram.svg';
+import IconTwitter from '../assets/icones/icon_twitter.svg';
+import IconYoutube from '../assets/icones/icon_youtube.svg';
+
+const socialLinks = [
+  { url: 'https://facebook.com', label: 'facebook', Icon: IconFacebook },
+  { url: 'https://instagram.com', label: 'instagram', Icon: IconInstagram },
+  { url: 'https://twitter.com', label: 'twitter', Icon: IconTwitter },
+  { url: 'https://youtube.com', label: 'youtube', Icon: IconYoutube },
+];
+---
+
+<footer class="grille space-y-6 text-sm bg-stone-900 py-16 px-6 text-white lg:space-y-0">
+  <a class="block" href="/" aria-label="Accueil">
+    <LogoFooter/>
+  </a>
+  
+  <nav class="space-y-3 lg:col-span-3 lg:col-start-7">
+    <h3 class="uppercase text-sm tracking-wide text-stone-400">Menu</h3>
+    <ul>
+      <li><a href="/agenda">Agenda</a></li>
+      <li><a href="/contact">Contact et accès</a></li>
+    </ul>
+  </nav>
+
+  <div class="space-y-3 lg:col-span-3 lg:col-start-10">
+    <h3 class="uppercase text-sm tracking-wide text-stone-400">Contact</h3>
+    <address class="not-italic">
+      1 rue Paul Koepfler<br />90000 Belfort<br />
+      <a href="tel:0384542727">03 84 54 27 27</a><br />
+      <a href="mailto:conservatoire@agglo-belfort.fr">conservatoire@agglo-belfort.fr</a>
+    </address>
+  </div>
+
+  <div class="lg:col-span-3 lg:col-start-7">
+    <LogoGrandBelfort/>
+  </div>
+
+  <div class="space-y-3 lg:col-span-3 lg:col-start-10">
+    <h3 class="uppercase text-sm tracking-wide text-stone-400">Nous suivre</h3>
+    <ul class="flex gap-4">
+      {socialLinks.map(({ url, label, Icon }) => (
+        <li>
+          <a href={url} aria-label={label}>
+            <Icon class="fill-white"/>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</footer>
+```
+
+**Positionnement dans la grille** :
+- `lg:space-y-0` : Supprime l'espacement vertical en desktop (éléments côte à côte)
+- `lg:col-span-3` : L'élément occupe 3 colonnes
+- `lg:col-start-7` : L'élément commence à la colonne 7
+- `lg:col-start-10` : L'élément commence à la colonne 10
+
+<Image src={footerGrid} alt="Grille du pied de page"/>

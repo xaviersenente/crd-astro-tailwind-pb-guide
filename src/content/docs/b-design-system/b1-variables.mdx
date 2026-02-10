@@ -1,0 +1,133 @@
+---
+title: Variables de thème
+description: Définir les variables de design (couleurs, typographie, espacements)
+---
+
+import { LinkButton, LinkCard, Icon } from "@astrojs/starlight/components";
+
+:::note[Branche Git]
+**Branche :** [4.-Variables-de-thème](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/4.-Variables-de-th%C3%A8me)  
+**N° :** 4
+:::
+
+## Variables de thème
+
+Tailwind CSS utilise un système de **design tokens** puissant qui permet de définir des variables réutilisables pour tous les aspects du design : couleurs, typographie, espacements, ombres, etc.
+
+Avec Tailwind v4, les variables de thème sont définies directement dans les fichiers CSS en utilisant la directive `@theme`. Ces variables deviennent ensuite disponibles via les classes utilitaires de Tailwind ou peuvent être référencées via `var()` dans du CSS personnalisé.
+
+**Avantages :**
+
+- **Cohérence** : un seul endroit pour définir le design system
+- **Performance** : variables CSS natives, pas de compilation JS
+- **Flexibilité** : possibilité de surcharger les valeurs par contexte
+- **Theming dynamique** : dark mode et thèmes multiples facilités
+
+<LinkCard
+  title="Theme Configuration"
+  description="Documentation officielle de Tailwind CSS sur la configuration du thème avec les variables CSS"
+  href="https://tailwindcss.com/docs/theme"
+/>
+
+## Typographie
+
+### Installation des fontes via Fontsource
+
+Nous utilisons [Fontsource](https://fontsource.org/) pour gérer les polices de caractères localement, ce qui améliore les performances et respecte la vie privée des utilisateurs.
+
+<LinkCard
+  title="Font source"
+  description="Bibliothèque open source qui permet d’installer des Google Fonts via npm pour les utiliser directement dans un projet web, sans passer par un CDN."
+  href="https://fontsource.org/"
+/>
+
+#### 1. Installer les polices
+
+- **Mulish** : [fontsource.org/fonts/mulish](https://fontsource.org/fonts/mulish)
+- **Space Mono** : [fontsource.org/fonts/space-mono](https://fontsource.org/fonts/space-mono)
+
+```bash
+npm install @fontsource-variable/mulish @fontsource/space-mono
+```
+
+#### 2. Importer dans le layout principal
+
+```astro wrap ins={4-5}
+---
+// src/layouts/Layout.astro
+import '../styles/global.css';
+import "@fontsource/space-mono";
+import "@fontsource-variable/mulish";
+---
+```
+
+### Déclaration des variables de fonte
+
+Dans `src/styles/global.css` :
+
+```css wrap title="src/styles/global.css" ins={3-6}
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Mulish Variable", sans-serif;
+  --font-mono: "Space Mono", monospace;
+}
+```
+
+## Couleurs
+
+### OKLCH : le futur des couleurs CSS
+
+Nous utilisons le modèle de couleur `oklch` pour une meilleure gestion des contrastes et de la lisibilité.
+
+Les couleurs OKLCH offrent :
+
+- **Perception uniforme** : même luminosité perçue
+- **Gamut plus large** : plus de couleurs accessibles
+- **Meilleur contraste** : ajustement plus précis
+
+### Explication des valeurs `oklch`
+
+- **`26.53%`** : Luminosité (L, plus bas = plus sombre, plus haut = plus clair)
+- **`0.1502`** : Chroma (C, saturation de la couleur)
+- **`278.05`** : Teinte (H, l'angle sur la roue des couleurs)
+
+Ce modèle permet d'obtenir des couleurs plus uniformes par rapport au RGB ou au HSL, ce qui est utile pour assurer une bonne accessibilité et un design cohérent.
+
+<LinkCard
+  title="oklch.com"
+  href="https://oklch.com/"
+  description="OKLCH is a new way to encode colors (like hex, RGBA, or HSL)"
+/>
+
+### Couleurs personnalisées du thème
+
+Ajoutez les couleurs personnalisées suivantes :
+
+```css wrap title="src/styles/global.css" ins={7-8}
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Mulish", sans-serif;
+  --font-mono: "Space Mono", monospace;
+
+  --color-indigo: oklch(26.53% 0.1502 278.05); /* #1d096b */
+  --color-pink: oklch(82.94% 0.1209 30.54); /* #feaa9b */
+}
+```
+
+Supprimez le composant `Welcome` et ajoutez un titre à la place pour testez les variables de thèmes en utilisant les classes Tailwind correspondantes :
+
+```astro wrap title="src/pages/index.astro" del={2,7} ins={8}
+---
+import Welcome from '../components/Welcome.astro';
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout>
+	<Welcome />
+	<h1 class="font-mono text-indigo">Conservatoire Henri Dutilleux</h1>
+</Layout>
+
+
+```

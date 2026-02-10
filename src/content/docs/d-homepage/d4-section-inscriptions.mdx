@@ -1,0 +1,227 @@
+---
+title: Section Inscriptions avec fond d'image
+description: Création d'une section avec image de fond, overlay et contenu blanc
+---
+
+import { LinkCard, CardGrid } from "@astrojs/starlight/components";
+import { Image } from 'astro:assets';
+
+import sectionInscription from "../../../assets/sectioninscription-grid.webp";
+
+:::note[Branche Git]
+**Branche :** [16.-Section-inscriptions](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/16.-Section-inscriptions)  
+**N° :** 16
+:::
+
+La dernière section de la page d'accueil invite à l'inscription avec un fond d'image immersif, un overlay sombre et du contenu blanc. Cette section démontre l'utilisation avancée du duotone avec un overlay supplémentaire.
+
+<Image src={sectionInscription} alt="Section inscription" />
+
+## Étape 1 : Structure de base de la section
+
+Ajoutez la section Inscriptions après la section Agenda :
+
+```astro wrap title="src/pages/index.astro" ins={3-7}
+  </section>
+  
+  <section
+    class="grille relative space-y-8 py-54 text-white lg:before:col-span-2 lg:before:col-start-1 lg:before:mt-12 lg:before:h-px lg:before:bg-white"
+  >
+    <!-- Contenu à venir -->
+  </section>
+</Layout>
+```
+
+**Classes de la section** :
+- `grille` : Grille 12 colonnes
+- `relative` : Contexte de positionnement pour l'image en position absolue
+- `space-y-8` : Espacement vertical de 32px entre enfants
+- `py-54` : Padding vertical de 216px (valeur custom, espace important)
+- `text-white` : Texte blanc pour contraster avec l'image de fond
+
+**Séparateur blanc** :
+- `lg:before:col-span-2` : Pseudo-élément occupant 2 colonnes
+- `lg:before:col-start-1` : Démarre à la colonne 1
+- `lg:before:mt-12` : Marge top de 48px
+- `lg:before:h-px` : Hauteur de 1px
+- `lg:before:bg-white` : Couleur blanche (contrairement aux sections précédentes en noir)
+
+## Étape 2 : Ajout du header
+
+Ajoutez le titre et la description :
+
+```astro wrap title="src/pages/index.astro" ins={4-10}
+<section
+  class="grille relative space-y-8 py-54 text-white lg:before:col-span-2 lg:before:col-start-1 lg:before:mt-12 lg:before:h-px lg:before:bg-white"
+>
+  <header class="space-y-6 lg:col-span-6 lg:col-start-3">
+    <h2 class="text-4xl lg:text-6xl">Inscriptions</h2>
+    <p class="text-xl leading-normal lg:text-3xl">
+      Vous êtes désireux d'entrer au conservatoire&nbsp;? Vous trouverez ici toutes
+      les informations sur les modalités d'inscriptions.
+    </p>
+  </header>
+</section>
+```
+
+**Positionnement identique aux sections précédentes** :
+- `space-y-6` : Espacement entre titre et paragraphe
+- `lg:col-span-6` : 6 colonnes
+- `lg:col-start-3` : Démarre à la colonne 3
+
+**Styles du texte** :
+- Héritage de `text-white` de la section parente
+- Tailles identiques aux autres sections pour cohérence
+
+## Étape 3 : Ajout du bouton avec variant outlined
+
+Ajoutez un bouton avec le variant "outlined" adapté aux fonds sombres :
+
+```astro wrap title="src/pages/index.astro" ins={12-17}
+<section
+  class="grille relative space-y-8 py-54 text-white lg:before:col-span-2 lg:before:col-start-1 lg:before:mt-12 lg:before:h-px lg:before:bg-white"
+>
+  <header class="space-y-6 lg:col-span-6 lg:col-start-3">
+    <h2 class="text-4xl lg:text-6xl">Inscriptions</h2>
+    <p class="text-xl leading-normal lg:text-3xl">
+      Vous êtes désireux d'entrer au conservatoire&nbsp;? Vous trouverez ici toutes
+      les informations sur les modalités d'inscriptions.
+    </p>
+  </header>
+  
+  <Button
+    classes="lg:col-span-4 lg:col-start-9 lg:self-start lg:justify-self-end"
+    href="/inscription"
+    text="S'inscrire"
+    variant="outlined"
+  />
+</section>
+```
+
+**Variant outlined** :
+- `variant="outlined"` : Bordure blanche + texte blanc (voir [chapitre Button](/c-ui-primitives/c6-button))
+- Adapté aux fonds sombres
+- Hover : remplissage blanc avec effet `inset shadow`
+
+**Positionnement du bouton** :
+- Identique à la section Agenda (en haut à droite)
+- Classes personnalisées via prop `classes`
+
+:::tip[Choix du variant]
+Sur un fond sombre, le variant "outlined" offre un meilleur contraste qu'un bouton plein. Le variant "default" (bordure rose) serait moins visible sur l'image de fond.
+:::
+
+## Étape 4 : Import et ajout de l'image de fond
+
+Importez l'image et ajoutez-la avec Picture en position absolue :
+
+```astro wrap title="src/pages/index.astro" ins={3, 23-31}
+---
+// ... autres imports
+import imgCrdExt from "../assets/img/conservatoire-exterieur-03.jpg";
+---
+
+<section
+  class="grille relative space-y-8 py-54 text-white lg:before:col-span-2 lg:before:col-start-1 lg:before:mt-12 lg:before:h-px lg:before:bg-white"
+>
+  <header class="space-y-6 lg:col-span-6 lg:col-start-3">
+    <h2 class="text-4xl lg:text-6xl">Inscriptions</h2>
+    <p class="text-xl leading-normal lg:text-3xl">
+      Vous êtes désireux d'entrer au conservatoire&nbsp;? Vous trouverez ici toutes
+      les informations sur les modalités d'inscriptions.
+    </p>
+  </header>
+  <Button
+    classes="lg:col-span-4 lg:col-start-9 lg:self-start lg:justify-self-end"
+    href="/inscription"
+    text="S'inscrire"
+    variant="outlined"
+  />
+  
+  <Picture
+    pictureAttributes={{
+      class:
+        "duotone absolute -z-1 inset-0 object-cover after:absolute after:inset-0 after:bg-indigo/50",
+    }}
+    src={imgCrdExt}
+    alt="Façade Est du conservatoire avec des pins devant"
+    layout="full-width"
+  />
+</section>
+```
+
+**Positionnement de l'image** :
+- `absolute` : Position absolue (sort du flux)
+- `-z-1` : Derrière le contenu (z-index: -1)
+- `inset-0` : Couvre toute la section (top/right/bottom/left: 0)
+- `object-cover` : L'image couvre l'espace en conservant le ratio
+
+**Effet duotone** :
+- `duotone` : Classe appliquant l'effet bichromie (rose/indigo)
+
+**Overlay supplémentaire avec pseudo-élément ::after** :
+- `after:absolute after:inset-0` : Pseudo-élément couvrant toute l'image
+- `after:bg-indigo/50` : Fond indigo avec opacité 50%
+- Assombrit l'image pour améliorer la lisibilité du texte blanc
+
+:::note[Syntaxe opacity avec /]
+`bg-indigo/50` est équivalent à `bg-indigo bg-opacity-50`. La syntaxe `/50` est plus concise et s'applique directement à la couleur.
+
+[Documentation Tailwind](https://tailwindcss.com/docs/background-color#changing-the-opacity)
+:::
+
+## Étape 5 : Superposition des couches
+
+L'ordre des couches (du fond vers le premier plan) :
+
+```
+1. Image (z-index: auto)
+   └── duotone (effet bichromie)
+       └── ::after (overlay indigo/50)
+
+2. Séparateur (::before de la section)
+
+3. Contenu (z-index: auto, au-dessus de l'image grâce à -z-1)
+   ├── Header (titre + description)
+   └── Button
+```
+
+**Effet visuel** :
+- L'image en duotone est assombrie par l'overlay indigo semi-transparent
+- Le texte blanc contraste fortement avec le fond sombre
+- Le bouton outlined ressort sur le fond sombre
+- Le séparateur blanc ajoute une touche graphique
+
+
+## Code final de la section
+
+```astro wrap title="src/pages/index.astro"
+<section
+  class="grille relative space-y-8 py-54 text-white lg:before:col-span-2 lg:before:col-start-1 lg:before:mt-12 lg:before:h-px lg:before:bg-white"
+>
+  <header class="space-y-6 lg:col-span-6 lg:col-start-3">
+    <h2 class="text-4xl lg:text-6xl">Inscriptions</h2>
+    <p class="text-xl leading-normal lg:text-3xl">
+      Vous êtes désireux d'entrer au conservatoire&nbsp;? Vous trouverez ici toutes
+      les informations sur les modalités d'inscriptions.
+    </p>
+  </header>
+  <Button
+    classes="lg:col-span-4 lg:col-start-9 lg:self-start lg:justify-self-end"
+    href="/inscription"
+    text="S'inscrire"
+    variant="outlined"
+  />
+  <Picture
+    pictureAttributes={{
+      class:
+        "duotone absolute -z-1 inset-0 object-cover after:absolute after:inset-0 after:bg-indigo/50",
+    }}
+    src={imgCrdExt}
+    alt="Façade Est du conservatoire avec des pins devant"
+    layout="full-width"
+  />
+</section>
+```
+
+Cette section clôture la page d'accueil avec un CTA fort et visuellement impactant, invitant les visiteurs à s'inscrire au conservatoire.

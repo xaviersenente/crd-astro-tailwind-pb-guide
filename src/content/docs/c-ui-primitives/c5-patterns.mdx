@@ -1,0 +1,357 @@
+---
+title: Motifs animés avec SVG et Web Animations API
+description: Créer un composant de motifs décoratifs animés avec effet de dessin progressif
+---
+
+import animatedPatterns from "../../../assets/patterns.mp4";
+
+:::note[Branche Git]
+**Branche :** [11.-Composant-AnimatedPatterns](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/11.-Composant-AnimatedPatterns)  
+**N° :** 11
+:::
+
+Le composant Patterns affiche des motifs SVG décoratifs avec une animation de dessin progressif. Chaque ligne courbe apparaît séquentiellement grâce à la technique du `stroke-dashoffset` et à la Web Animations API.
+
+<video src={animatedPatterns} controls loop muted style="max-width: 100%; height: auto; border-radius: 8px;"></video>
+
+
+## Étape 1 : Contenu du fichier SVG
+
+Le fichier SVG contient des chemins (`<path>`) avec un attribut `stroke` (contour) plutôt que `fill` (remplissage). L'effet de dessin fonctionne en animant le contour des chemins.
+
+**Structure attendue du SVG** :
+
+```xml title="src/assets/icones/patterns.svg"
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <g class="curveLines">
+    <path d="M 10 100 Q 150 50, 300 100" stroke="#000" fill="none" />
+    <path d="M 50 200 Q 200 150, 350 200" stroke="#000" fill="none" />
+    <path d="M 100 300 Q 250 250, 400 300" stroke="#000" fill="none" />
+    <!-- Plus de chemins pour créer le motif -->
+  </g>
+</svg>
+```
+
+**Points clés** :
+- `class="curveLines"` : Sur le groupe `<g>` pour cibler les chemins en JavaScript
+- `stroke="#000"` : Contour visible (couleur adaptable)
+- `fill="none"` : Pas de remplissage, uniquement le contour
+- Plusieurs `<path>` : Chaque path sera animé individuellement
+
+## Étape 2 : Structure de base du composant
+
+Créez le fichier `AnimatedPatterns.astro` dans `src/components/` :
+
+```astro wrap title="src/components/AnimatedPatterns.astro"
+---
+import Patterns from "../assets/icones/patterns.svg";
+---
+
+<Patterns />
+```
+
+## Étape 3 : Masquage initial des chemins avec CSS
+
+Ajoutez un bloc `<style>` pour masquer les chemins avant l'animation :
+
+```astro wrap title="src/components/AnimatedPatterns.astro" ins={7-11}
+---
+import Patterns from "../assets/icones/patterns.svg";
+---
+
+<Patterns />
+
+<style>
+  .curveLines path {
+    opacity: 0;
+  }
+</style>
+```
+
+**Explication** :
+- `.curveLines path` : Cible tous les `<path>` dans le groupe avec la classe `curveLines`
+- `opacity: 0` : Masque les chemins au chargement
+- Les chemins deviendront visibles via l'animation JavaScript
+
+**Pourquoi masquer initialement ?** :
+- Évite un "flash" où les chemins sont visibles avant l'animation
+- Crée un effet de révélation progressif
+- L'animation va animer l'opacité de 0 à 1 en même temps que le dessin
+
+:::note[Scoped styles dans Astro]
+Les styles dans les composants Astro sont scopés par défaut aux éléments du composant. Cependant, ici on cible des éléments SVG importés, donc le style s'applique directement.
+:::
+
+## Étape 4 : Sélection des chemins et vérification
+
+Ajoutez un bloc `<script>` pour sélectionner les chemins SVG :
+
+```astro wrap title="src/components/AnimatedPatterns.astro" ins={13-20}
+---
+import Patterns from "../assets/icones/patterns.svg";
+---
+
+<Patterns />
+
+<style>
+  .curveLines path {
+    opacity: 0;
+  }
+</style>
+
+<script>
+  const lines = document.querySelectorAll(".curveLines path");
+  
+  // Vérifier que des paths existent avant d'animer
+  if (lines.length > 0) {
+    // Animation à venir
+  }
+</script>
+```
+
+**Explication** :
+- `document.querySelectorAll(".curveLines path")` : Sélectionne tous les `<path>` dans `.curveLines`
+- Retourne une `NodeList` (liste de nœuds DOM)
+- `if (lines.length > 0)` : Sécurité pour vérifier que des chemins existent avant d'animer
+
+**Pourquoi cette vérification ?** :
+- Si le SVG n'a pas de chemins ou si la classe est incorrecte, évite une erreur JavaScript
+- Bon pattern défensif pour les composants réutilisables
+- Évite des erreurs si le SVG change de structure
+
+:::tip[Scripts dans Astro]
+Les scripts dans les composants Astro s'exécutent côté client après le chargement de la page. Utilisez `<script>` pour les interactions DOM et animations côté navigateur.
+:::
+
+## Étape 5 : Principe de l'animation stroke-dashoffset
+
+L'animation de dessin SVG repose sur deux propriétés CSS : `stroke-dasharray` (définit un motif de tirets) et `stroke-dashoffset` (décale ce motif).
+
+**Technique** :
+
+1. Mesurer la longueur du chemin : `getTotalLength()`
+2. Créer un tiret unique de cette longueur : `stroke-dasharray = longueur`
+3. Décaler ce tiret hors de vue : `stroke-dashoffset = longueur`
+4. Animer le décalage vers 0 : le tiret "avance" et dessine le chemin
+
+**Résultat** : Le chemin se dessine progressivement de 0% à 100%.
+
+:::note[getTotalLength()]
+La méthode `getTotalLength()` est une API SVG native qui retourne la longueur totale d'un chemin en pixels. Elle fonctionne uniquement sur des éléments `<path>`.
+
+[Documentation MDN](https://developer.mozilla.org/fr/docs/Web/API/SVGGeometryElement/getTotalLength)
+:::
+
+## Étape 6 : Configuration du stroke-dasharray
+
+Ajoutez la boucle pour configurer chaque chemin :
+
+```astro wrap title="src/components/AnimatedPatterns.astro" ins={5-9}
+<script>
+  const lines = document.querySelectorAll(".curveLines path");
+
+  if (lines.length > 0) {
+    lines.forEach((el, index) => {
+      const totalLength = el.getTotalLength();
+      el.style.strokeDasharray = totalLength.toString();
+      // Animation à venir
+    });
+  }
+</script>
+```
+
+**Explication** :
+- `lines.forEach((el, index) => {...})` : Parcourt chaque élément `<path>`
+- `el.getTotalLength()` : Mesure la longueur totale du chemin en pixels
+- `el.style.strokeDasharray = totalLength.toString()` : Définit un tiret de la longueur totale
+- `index` : Position du chemin dans la liste (utilisé pour le délai d'animation)
+
+**Résultat** :
+Chaque chemin a maintenant un `stroke-dasharray` égal à sa longueur totale, prêt pour l'animation du `stroke-dashoffset`.
+
+## Étape 7 : Animation avec Web Animations API
+
+La [Web Animations API](https://developer.mozilla.org/fr/docs/Web/API/Web_Animations_API) est une API JavaScript moderne pour créer des animations performantes. Elle offre plus de contrôle que les transitions CSS et est plus légère que des bibliothèques comme GSAP.
+
+### Syntaxe de base
+
+```js
+element.animate(keyframes, options);
+```
+
+- `keyframes` : Tableau d'objets définissant les états d'animation (comme `@keyframes` en CSS)
+- `options` : Objet configurant la durée, le délai, l'easing, etc.
+
+### Implémentation complète de l'animation
+
+```astro wrap title="src/components/AnimatedPatterns.astro" ins={8-20}
+<script>
+  const lines = document.querySelectorAll(".curveLines path");
+
+  if (lines.length > 0) {
+    lines.forEach((el, index) => {
+      const totalLength = el.getTotalLength();
+      el.style.strokeDasharray = totalLength.toString();
+      el.animate(
+        [
+          { strokeDashoffset: totalLength, opacity: 0 },
+          { strokeDashoffset: 0, opacity: 1 },
+        ],
+        {
+          duration: 1200,
+          delay: index * 150,
+          easing: "cubic-bezier(0.33, 0.33, 0.4, 0.99)",
+          fill: "backwards",
+        },
+      );
+    });
+  }
+</script>
+```
+
+### Décomposition de l'animation
+
+**Keyframes (états de l'animation)** :
+
+```js
+[
+  { strokeDashoffset: totalLength, opacity: 0 },  // État initial
+  { strokeDashoffset: 0, opacity: 1 },            // État final
+]
+```
+
+- **État initial** :
+  - `strokeDashoffset: totalLength` : Tiret complètement décalé (invisible)
+  - `opacity: 0` : Chemin transparent
+  
+- **État final** :
+  - `strokeDashoffset: 0` : Tiret en position normale (chemin dessiné)
+  - `opacity: 1` : Chemin opaque
+
+**Options de l'animation** :
+
+```js
+{
+  duration: 1200,                                    // Durée de 1200ms (1.2s)
+  delay: index * 150,                                // Délai progressif
+  easing: "cubic-bezier(0.33, 0.33, 0.4, 0.99)",   // Courbe d'accélération
+  fill: "backwards",                                 // Mode de remplissage
+}
+```
+
+**`duration: 1200`** :
+- Durée de l'animation en millisecondes
+- 1200ms = 1.2 secondes pour dessiner chaque ligne
+
+**`delay: index * 150`** :
+- Délai avant le démarrage de l'animation
+- Calculé selon la position du chemin dans la liste
+- `index * 150` : Délai progressif de 150ms entre chaque chemin
+- Exemples :
+  - Chemin 0 : délai 0ms (démarre immédiatement)
+  - Chemin 1 : délai 150ms
+  - Chemin 2 : délai 300ms
+  - Chemin 3 : délai 450ms
+- Crée un effet de cascade/séquence
+
+**`easing: "cubic-bezier(0.33, 0.33, 0.4, 0.99)"`** :
+- Courbe d'accélération personnalisée (timing function)
+- `cubic-bezier(x1, y1, x2, y2)` : Définit une courbe de Bézier
+- Valeurs `(0.33, 0.33, 0.4, 0.99)` : Effet de décélération douce (ease-out)
+- Le dessin démarre rapidement puis ralentit progressivement
+- [Visualiser la courbe](https://cubic-bezier.com/#.33,.33,.4,.99)
+
+**`fill: "backwards"`** :
+- Mode de remplissage de l'animation
+- `"backwards"` : Applique les valeurs du premier keyframe pendant le délai
+- Garantit que le chemin reste invisible (`opacity: 0`, `strokeDashoffset: totalLength`) pendant le délai avant le démarrage
+- Sans cette propriété, le chemin serait visible pendant le délai
+
+:::tip[Modes de remplissage]
+Les valeurs possibles de `fill` :
+- `"none"` : Pas d'effet avant/après l'animation
+- `"forwards"` : Conserve l'état final après l'animation
+- `"backwards"` : Applique l'état initial pendant le délai
+- `"both"` : Combine `forwards` et `backwards`
+
+[Documentation MDN](https://developer.mozilla.org/fr/docs/Web/API/EffectTiming/fill)
+:::
+
+
+## Étape 8 : Intégration des motifs sur la page d'accueil
+
+Intégrez le composant AnimatedPatterns dans le slot `patterns` :
+
+```astro wrap title="src/pages/index.astro" ins={6, 30-35}
+---
+import { Picture } from "astro:assets";
+
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
+import AnimatedPatterns from "../components/AnimatedPatterns.astro";
+
+import IconMusique from "../assets/icones/icon_musique.svg";
+import IconTheatre from "../assets/icones/icon_theatre.svg";
+import IconDanse from "../assets/icones/icon_danse.svg";
+import imgHero from "../assets/img/musique-01.jpg";
+
+const title = "Conservatoire Henri Dutilleux";
+const subTitle = "Conservatoire à Rayonnement Départemental du Grand Belfort";
+const description =
+  "Le Conservatoire Henri Dutilleux de Belfort vous accueille pour découvrir la musique, la danse et le théâtre.";
+---
+
+<Layout title={title} description={description}>
+  <Hero title={title} subTitle={subTitle}>
+    <div class="flex-1 font-mono lg:text-3xl" slot="chapo">
+      <ul
+        class="grid grid-cols-3 gap-12 *:flex *:flex-col *:items-center *:gap-4 *:lg:flex-row"
+      >
+        <li><IconMusique /> Musique</li>
+        <li><IconTheatre /> Théâtre</li>
+        <li><IconDanse /> Danse</li>
+      </ul>
+    </div>
+    <div
+      class="absolute inset-0 z-0 flex items-center justify-end overflow-hidden stroke-pink stroke-24 opacity-80 mix-blend-difference"
+      slot="patterns"
+    >
+      <AnimatedPatterns class="-ml-60 lg:ml-auto lg:w-[96vw]" />
+    </div>
+    <Picture
+      slot="image"
+      src={imgHero}
+      alt="Violoncelles"
+      layout="full-width"
+      pictureAttributes={{ class: "duotone absolute inset-0 object-cover" }}
+    />
+  </Hero>
+</Layout>
+
+```
+
+
+**Conteneur des patterns** :
+- `slot="patterns"` : Insertion dans le slot patterns du Hero
+- `absolute inset-0` : Position absolue couvrant tout le Hero
+- `z-0` : Derrière le contenu (z-index: 0)
+- `flex items-center justify-end` : Alignement vertical centré, horizontal à droite
+- `overflow-hidden` : Masque les débordements
+
+**Styles SVG** :
+- `stroke-pink` : Couleur rose pour les traits
+- `stroke-24` : Épaisseur du trait (personnalisé dans le theme)
+- `opacity-80` : Opacité 80%
+- `mix-blend-difference` : Mode de fusion "difference" (inversion des couleurs)
+
+**Positionnement du composant Patterns** :
+- `-mr-[2vw]` : Marge droite négative de 2vw (sort légèrement du container)
+- `-ml-60` : Marge gauche négative de 240px (mobile)
+- `lg:ml-auto` : Marge gauche automatique sur desktop (pousse à droite)
+- `lg:w-[96vw]` : Largeur de 96% de la viewport sur desktop
+
+:::tip[Mode de fusion mix-blend]
+Le mode `mix-blend-difference` inverse les couleurs là où les patterns se superposent au contenu, créant un effet visuel dynamique et moderne.
+
+[Documentation MDN](https://developer.mozilla.org/fr/docs/Web/CSS/mix-blend-mode)
+:::

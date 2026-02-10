@@ -1,0 +1,281 @@
+---
+title: Collecte des données
+description: Récupérer et utiliser les données PocketBase dans Astro
+---
+
+import { LinkCard } from "@astrojs/starlight/components";
+
+:::note[Branche Git]
+**Branche :** [18.-Collecte-des-données](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/18.-Collecte-des-données)  
+**N° :** 18
+:::
+
+## Introduction
+
+PocketBase expose une **API REST complète** qui permet d'interagir avec vos collections de données directement depuis votre application Astro. Cette API offre toutes les opérations CRUD (Create, Read, Update, Delete) nécessaires pour manipuler vos données de manière simple et sécurisée.
+
+Le **SDK JavaScript de PocketBase** facilite grandement l'utilisation de cette API en fournissant des méthodes pratiques et typées. Dans ce chapitre, nous allons voir comment :
+
+- Configurer la connexion à votre instance PocketBase
+- Récupérer la liste complète d'une collection
+- Filtrer et trier les données (événements à venir)
+- Obtenir un élément spécifique par son identifiant
+
+Ces fonctions constituent la base de toute interaction avec votre backend PocketBase et seront réutilisées dans les pages dynamiques de votre site.
+
+### Cas d'usage des fonctions
+
+Chaque fonction a un rôle spécifique dans l'architecture de votre application :
+
+- **`getCollection()`** : récupère tous les éléments d'une collection. Utile en mode static pour générer les fichiers HTML de chaque événement au moment du build.
+- **`getUpcomingEvents()`** : récupère tous les événements à venir sans limite. Sera utilisée pour afficher la liste complète des événements sur la page agenda.
+- **`getNextEvents()`** : récupère un nombre limité d'événements à venir (par défaut 3). Sera utilisée pour afficher les prochains événements sur la page d'accueil.
+- **`getOneById()`** : récupère un événement spécifique par son identifiant. Permet d'afficher les détails complets d'un événement dans son template dédié.
+
+<LinkCard
+  title="API Records Pocketbase"
+  href="https://pocketbase.io/docs/api-records/"
+  description="Web APIs reference - API Records"
+/>
+
+## Connexion à PocketBase
+
+### Installation du SDK
+
+Commencez par installer PocketBase avec la commande suivante :
+
+```bash
+npm install pocketbase --save
+```
+
+
+
+
+### Créer le fichier backend
+
+Dans le répertoire `js`, ajoutez un fichier `backend.mjs` :
+
+```js
+// src/js/backend.mjs
+
+// Importation de la bibliothèque PocketBase
+import PocketBase from "pocketbase";
+
+// Définition de l'URL de l'instance PocketBase
+const POCKETBASE_URL = import.meta.env?.PUBLIC_POCKETBASE_URL || "http://127.0.0.1:8090";
+
+// Création de l'instance PocketBase avec l'URL définie plus haut
+const pb = new PocketBase(POCKETBASE_URL);
+
+// Exportation de l'instance PocketBase pour l'utiliser dans d'autres fichiers
+export { pb };
+```
+
+
+## Récupérer la liste d'une collection
+
+### Fonction simple getCollection()
+
+Dans le fichier `backend.mjs`, ajoutez la fonction `getCollection()` qui récupère la liste de tous les contenus d'une collection.
+
+```js
+// Fonction pour récupérer tous les contenus de la collection spécifiée
+// Utilise la méthode `getFullList` de PocketBase qui renvoie tous les éléments de la collection
+export async function getCollection(collection) {
+  try {
+    // Tentative de récupération de la liste complète des événements de la collection donnée
+    return await pb.collection(collection).getFullList();
+  } catch (error) {
+    // Si une erreur survient, elle est loguée dans la console
+    console.error("Erreur lors de la récupération des contenus :", error);
+    // Retourne un tableau vide en cas d'échec
+    return [];
+  }
+}
+```
+
+### Vérifier l'accès aux données
+
+Vous pouvez afficher les éléments en suivant l'URL fournie par l'API :
+
+[http://127.0.0.1:8090/api/collections/event/records](http://127.0.0.1:8090/api/collections/event/records)
+
+Vous pouvez également ajouter le code ci-dessous pour tester la fonction `getCollection()` :
+
+```js
+// src/js/backend.mjs
+
+try {
+  const records = await getCollection("event");
+  console.log(records);
+} catch (e) {
+  console.error(e);
+}
+```
+
+Lancez ensuite les commandes suivantes dans le terminal :
+
+```bash
+cd src/js
+node backend.mjs
+```
+
+## Récupérer la liste des prochains évènements
+
+```js
+/**
+ * Récupère tous les événements à venir (sans pagination)
+ * @param {string} collection - Nom de la collection (défaut: "event")
+ * @returns {Promise<Array>} Liste de tous les événements à venir ou tableau vide
+ */
+export async function getUpcomingEvents(collection = "event") {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const items = await pb.collection(collection).getFullList({
+      filter: `date >= "${today.toISOString()}"`,
+      sort: "+date",
+    });
+
+    return items;
+  } catch (error) {
+    console.error(
+      "Erreur lors de la récupération des événements à venir :",
+      error,
+    );
+    return [];
+  }
+}
+```
+
+### Vérifier l'accès aux données
+
+```js
+// src/js/backend.mjs
+
+try {
+  const records = await getUpcomingEvents("event");
+  console.log(records);
+} catch (e) {
+  console.error(e);
+}
+```
+
+Lancez ensuite les commandes suivantes dans le terminal :
+
+```bash
+cd src/js
+node backend.mjs
+```
+
+## Récupérer un nombre limité d'événements à venir
+
+Cette fonction est similaire à `getUpcomingEvents()`, mais elle permet de limiter le nombre de résultats. Elle est particulièrement utile pour afficher un aperçu des prochains événements sur la page d'accueil, par exemple les 3 prochains événements.
+
+```js
+/**
+ * Récupère les prochains événements à venir (limité à un nombre spécifique)
+ * @param {number} limit - Nombre d'événements à récupérer (défaut: 3)
+ * @param {string} collection - Nom de la collection (défaut: "event")
+ * @returns {Promise<Array>} Liste des prochains événements ou tableau vide
+ */
+export async function getNextEvents(limit = 3, collection = "event") {
+  try {
+    // Crée un objet Date représentant la date d'aujourd'hui
+    const today = new Date();
+    // Réinitialise l'heure à 00:00:00 (pour ne pas inclure d'événements passés)
+    today.setHours(0, 0, 0, 0);
+
+    // Récupère les événements de la collection spécifiée, en les filtrant par date
+    // et en limitant le nombre de résultats
+    const items = await pb.collection(collection).getList(1, limit, {
+      filter: `date >= "${today.toISOString()}"`, // Filtre basé sur la date actuelle
+      sort: "+date", // Tri croissant des événements par date
+    });
+    // Retourne les événements récupérés
+    return items.items;
+  } catch (error) {
+    // Si une erreur survient lors de la récupération des événements, elle est loguée dans la console
+    console.error(
+      "Erreur lors de la récupération des prochains événements :",
+      error,
+    );
+    return [];
+  }
+}
+```
+
+### Différence avec getUpcomingEvents()
+
+La principale différence entre `getNextEvents()` et `getUpcomingEvents()` réside dans la méthode utilisée :
+
+- **`getNextEvents()`** utilise `getList()` avec pagination et limite le nombre de résultats
+- **`getUpcomingEvents()`** utilise `getFullList()` qui récupère tous les événements à venir sans limite
+
+### Vérifier l'accès aux données
+
+```js
+// src/js/backend.mjs
+
+try {
+  const records = await getNextEvents(3, "event");
+  console.log(records);
+} catch (e) {
+  console.error(e);
+}
+```
+
+Lancez ensuite les commandes suivantes dans le terminal :
+
+```bash
+cd src/js
+node backend.mjs
+```
+
+## Récupérer un élément spécifique par son ID
+
+```js
+/**
+ * Récupère un élément spécifique par son ID
+ * @param {string} id - Identifiant de l'élément
+ * @param {string} collection - Nom de la collection
+ * @returns {Promise<Object|null>} L'élément trouvé ou null en cas d'erreur
+ */
+export async function getOneById(id, collection) {
+  try {
+    const item = await pb.collection(collection).getOne(id);
+    return item;
+  } catch (error) {
+    console.error(
+      `Erreur lors de la récupération de l'élément "${id}" de la collection "${collection}" :`,
+      error,
+    );
+    return null;
+  }
+}
+```
+
+### Vérifier l'accès aux données
+
+Remplacez l'id par un id existant dans votre base de données
+
+```js
+// src/js/backend.mjs
+
+try {
+  const records = await getOneById("4tvlzgedjmy6skf", "event");
+  console.log(records);
+} catch (e) {
+  console.error(e);
+}
+```
+
+Lancez ensuite les commandes suivantes dans le terminal :
+
+```bash
+cd src/js
+node backend.mjs
+```
+
+

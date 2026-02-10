@@ -1,0 +1,147 @@
+---
+title: Mise à jour de la page d'accueil
+description: Remplacer les données statiques par les données PocketBase
+---
+
+:::note[Branche Git]
+**Branche :** [20.-Page-Agenda](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/20.-Page-Agenda)  
+**N° :** 20
+:::
+
+## Introduction
+
+Maintenant que nous avons mis en place les fonctions de collecte de données PocketBase, nous pouvons remplacer les données statiques de la page d'accueil par des données réelles provenant de notre backend.
+
+Dans ce chapitre, nous allons :
+
+- Importer la fonction `getNextEvents()` pour récupérer les 3 prochains événements
+- Remplacer le tableau statique `[1, 2, 3]` par les données dynamiques
+- Afficher les événements avec le composant `Card`
+- Gérer le cas où aucun événement n'est disponible
+
+## Code de départ
+
+Voici la section "Agenda" de la page d'accueil avec des données statiques :
+
+```astro title="src/pages/index.astro" collapse={2-15} del={27-32, 56-64} ins={18, 20, 65-69}
+---
+import { Picture } from "astro:assets";
+
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
+import AnimatedPatterns from "../components/AnimatedPatterns.astro";
+import Button from "../components/Button.astro";
+import Card from "../components/Card.astro";
+
+import IconMusique from "../assets/icones/icon_musique.svg";
+import IconTheatre from "../assets/icones/icon_theatre.svg";
+import IconDanse from "../assets/icones/icon_danse.svg";
+import imgHero from "../assets/img/musique-01.jpg";
+import imgCrdInt from "../assets/img/conservatoire-interieur-05.jpg";
+import points from "../assets/icones/points.svg";
+import imgCrdExt from "../assets/img/conservatoire-exterieur-03.jpg";
+
+import { getNextEvents } from "../js/backend.mjs";
+
+const events = await getNextEvents();
+
+const title = "Conservatoire Henri Dutilleux";
+const subTitle = "Conservatoire à Rayonnement Départemental du Grand Belfort";
+const description =
+  "Le Conservatoire Henri Dutilleux de Belfort vous accueille pour découvrir la musique, la danse et le théâtre.";
+
+const stats = [
+  { number: 9, label: "sites" },
+  { number: 84, label: "enseignants" },
+  { number: 1500, label: "élèves" },
+  { number: 50, label: "disciplines" },
+];
+---
+
+<Layout title={title} description={description}>
+  <!-- Hero section... -->
+
+  <!-- Section découverte... -->
+
+  <section
+    class="grille space-y-8 py-24 lg:before:col-span-2 lg:before:col-start-1 lg:before:mt-12 lg:before:h-px lg:before:bg-black"
+  >
+    <header class="space-y-6 lg:col-span-6 lg:col-start-3">
+      <h2 class="text-4xl lg:text-6xl">Agenda</h2>
+      <p class="text-xl leading-normal lg:text-3xl">
+        Lieu de création artistique, le conservatoire propose régulièrement des
+        actions culturelles ouvertes à tous.
+      </p>
+    </header>
+    <Button
+      href="#"
+      text="Tous les évènements"
+      classes="lg:col-span-4 lg:col-start-9 lg:self-start lg:justify-self-end"
+    />
+    {
+      [1, 2, 3].map((i) => (
+        <Card
+          title={`Titre de l'événement ${i}`}
+          date="Lundi 15 mars à 20h30"
+          excerpt="Description courte de l'événement à venir au conservatoire."
+          imgFile={imgHero}
+          imgAlt="Image de l'événement"
+        />
+      ))
+      events.length > 0 ? (
+        events.map((event) => <Card {...event} />)
+      ) : (
+        <p class="col-span-4">Aucun événement à afficher.</p>
+      )
+    }
+  </section>
+
+  <!-- Section inscriptions... -->
+</Layout>
+```
+
+### Utilisation de getNextEvents()
+
+La fonction `getNextEvents()` récupère par défaut les **3 prochains événements** à venir depuis PocketBase. Elle retourne un tableau d'objets contenant toutes les propriétés nécessaires au composant `Card`.
+
+### Spread operator
+
+L'utilisation de `{...event}` permet de passer toutes les propriétés de l'objet `event` comme props au composant `Card`. Cela évite d'avoir à écrire chaque prop individuellement :
+
+```astro
+// Au lieu de :
+<Card title={event.title} date={event.date} excerpt={event.excerpt} ... />
+
+// On peut écrire :
+<Card {...event} />
+```
+
+### Gestion de l'absence d'événements
+
+Le ternaire vérifie si le tableau `events` contient des éléments :
+
+- **Si oui** : on affiche les cartes avec `.map()`
+- **Si non** : on affiche un message "Aucun événement à afficher"
+
+Cette gestion permet d'éviter d'afficher une section vide et améliore l'expérience utilisateur.
+
+## Vérification
+
+Pour vérifier que tout fonctionne correctement :
+
+1. Assurez-vous que PocketBase est lancé avec des événements dans la collection
+2. Lancez le serveur de développement :
+
+```bash
+npm run dev
+```
+
+3. Accédez à [http://localhost:4321](http://localhost:4321)
+4. Vérifiez que les 3 prochains événements s'affichent correctement dans la section Agenda
+
+:::tip[Astuce]
+Si aucun événement ne s'affiche, vérifiez que :
+- PocketBase est bien lancé
+- La collection `event` contient des événements avec une date future
+- L'URL de PocketBase dans `.env` est correcte
+:::

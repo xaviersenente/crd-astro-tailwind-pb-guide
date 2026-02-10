@@ -1,0 +1,212 @@
+---
+title: Section Agenda avec Cards
+description: Affichage d'une liste d'événements avec le composant Card et itération JavaScript
+---
+
+import { LinkCard, CardGrid } from "@astrojs/starlight/components";
+import { Image } from 'astro:assets';
+
+import sectionAgenda from "../../../assets/sectionagenda-grid.webp";
+
+:::note[Branche Git]
+**Branche :** [15.-Section-Agenda](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/15.-Section-Agenda)  
+**N° :** 15
+:::
+
+La section Agenda présente les événements à venir du conservatoire. Elle utilise le composant Card créé précédemment et démontre comment générer dynamiquement plusieurs instances avec une boucle JavaScript.
+
+<Image src={sectionAgenda} alt="Section agenda" />
+
+## Étape 1 : Structure de base avec header
+
+Ajoutez la section Agenda après la section Découverte :
+
+```astro wrap title="src/pages/index.astro" ins={3-13}
+  </section>
+  
+  <section
+    class="grille space-y-8 py-24 lg:before:col-span-2 lg:before:col-start-1 lg:before:mt-12 lg:before:h-px lg:before:bg-black"
+  >
+    <header class="space-y-6 lg:col-span-6 lg:col-start-3">
+      <h2 class="text-4xl lg:text-6xl">Agenda</h2>
+      <p class="text-xl leading-normal lg:text-3xl">
+        Lieu de création artistique, le conservatoire propose régulièrement des
+        actions culturelles ouvertes à tous.
+      </p>
+    </header>
+  </section>
+</Layout>
+```
+
+**Classes de la section** :
+- `grille` : Grille 12 colonnes
+- `space-y-8` : Espacement vertical de 32px entre enfants
+- `py-24` : Padding vertical de 96px
+
+**Pseudo-élément ::before pour le séparateur** :
+- `lg:before:col-span-2` : Le pseudo-élément occupe 2 colonnes
+- `lg:before:col-start-1` : Démarre à la colonne 1
+- `lg:before:mt-12` : Marge top de 48px
+- `lg:before:h-px` : Hauteur de 1px (ligne fine)
+- `lg:before:bg-black` : Couleur noire
+
+:::note[Pseudo-éléments avec Grid]
+Le pseudo-élément `::before` participe au grid layout et peut recevoir des propriétés de positionnement grid (`col-span`, `col-start`). Cela crée un séparateur horizontal intégré au layout.
+:::
+
+**Positionnement du header** :
+- `space-y-6` : Espacement de 24px entre titre et paragraphe
+- `lg:col-span-6` : Occupe 6 colonnes (sur 12)
+- `lg:col-start-3` : Démarre à la colonne 3 (centré avec marge gauche)
+
+
+## Étape 2 : Ajout du bouton "Tous les événements"
+
+Ajoutez un bouton aligné à droite pour voir tous les événements :
+
+```astro wrap title="src/pages/index.astro" ins={12-16}
+<section
+  class="grille space-y-8 py-24 lg:before:col-span-2 lg:before:col-start-1 lg:before:mt-12 lg:before:h-px lg:before:bg-black"
+>
+  <header class="space-y-6 lg:col-span-6 lg:col-start-3">
+    <h2 class="text-4xl lg:text-6xl">Agenda</h2>
+    <p class="text-xl leading-normal lg:text-3xl">
+      Lieu de création artistique, le conservatoire propose régulièrement des
+      actions culturelles ouvertes à tous.
+    </p>
+  </header>
+  
+  <Button
+    href="#"
+    text="Tous les évènements"
+    classes="lg:col-span-4 lg:col-start-9 lg:self-start lg:justify-self-end"
+  />
+</section>
+```
+
+**Positionnement du bouton sur la grille** :
+- `lg:col-span-4` : Occupe 4 colonnes
+- `lg:col-start-9` : Démarre à la colonne 9 (à droite)
+- `lg:self-start` : Alignement vertical en haut de la cellule
+- `lg:justify-self-end` : Alignement horizontal à droite de la cellule
+
+**Prop classes personnalisée** :
+Le composant Button accepte une prop `classes` pour ajouter des styles contextuels sans modifier le composant lui-même.
+
+:::tip[self et justify-self]
+Les propriétés `self-start` et `justify-self-end` permettent d'aligner un élément grid individuel indépendamment des autres éléments. Ici, le bouton est en haut à droite de sa zone.
+:::
+
+
+## Étape 3 : Import du composant Card et génération avec une boucle
+
+Importez le composant Card créé dans le chapitre [Card](/c-ui-primitives/c5-card) et utilisez une boucle JavaScript pour générer plusieurs cards :
+
+```astro wrap title="src/pages/index.astro" ins={8, 27-37} collapse={2-6,10-25}
+---
+import { Picture } from "astro:assets";
+
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
+import AnimatedPatterns from "../components/AnimatedPatterns.astro";
+import Button from "../components/Button.astro";
+import Card from "../components/Card.astro";
+---
+<section
+  class="grille space-y-8 py-24 lg:before:col-span-2 lg:before:col-start-1 lg:before:mt-12 lg:before:h-px lg:before:bg-black"
+>
+  <header class="space-y-6 lg:col-span-6 lg:col-start-3">
+    <h2 class="text-4xl lg:text-6xl">Agenda</h2>
+    <p class="text-xl leading-normal lg:text-3xl">
+      Lieu de création artistique, le conservatoire propose régulièrement des
+      actions culturelles ouvertes à tous.
+    </p>
+  </header>
+  
+  <Button
+    href="#"
+    text="Tous les évènements"
+    classes="lg:col-span-4 lg:col-start-9 lg:self-start lg:justify-self-end"
+  />
+  
+  {
+    [1, 2, 3].map((i) => (
+      <Card
+        title={`Titre de l'événement ${i}`}
+        date="2026-02-15"
+        excerpt="Description courte de l'événement à venir au conservatoire."
+        imgFile={imgHero}
+        imgAlt="Image de l'événement"
+      />
+    ))
+  }
+</section>
+```
+
+**Boucle avec map()** :
+- `[1, 2, 3]` : Tableau de 3 éléments
+- `.map((i) => ...)` : Itère sur chaque élément
+- Retourne un composant `<Card>` pour chaque élément
+- `i` : Index utilisé pour numéroter les titres
+
+**Props passées au Card** :
+- `title` : Titre de l'événement (avec interpolation `${i}`)
+- `date` : Date au format ISO (2026-02-15)
+- `excerpt` : Description courte
+- `imgFile` : Image importée (réutilise `imgHero`)
+- `imgAlt` : Texte alternatif pour l'image
+
+:::note[JSX dans Astro]
+Astro supporte la syntaxe JSX dans le template. Les accolades `{}` permettent d'exécuter du JavaScript, incluant les boucles `.map()`, conditions, etc.
+:::
+
+:::tip[Contenu statique temporaire]
+Dans cet exemple, le contenu des Cards est statique (tableau `[1, 2, 3]` et données en dur). Dans les chapitres suivants sur PocketBase, nous remplacerons cette boucle simple par une itération sur des données réelles récupérées depuis la base de données, permettant d'afficher dynamiquement les événements du conservatoire.
+:::
+
+## Étape 4 : Comportement responsive des Cards
+
+Le composant Card est défini avec `col-span-4`, ce qui signifie :
+
+**Mobile** (`grid-cols-4` par défaut) :
+- Chaque Card occupe 4 colonnes
+- 1 Card par ligne (pleine largeur)
+- Empilement vertical
+
+**Desktop** (`lg:grid-cols-12`) :
+- Chaque Card occupe 4 colonnes (sur 12)
+- 3 Cards par ligne (4 + 4 + 4 = 12)
+- Disposition horizontale
+
+
+## Code final de la section
+
+```astro wrap title="src/pages/index.astro"
+<section
+  class="grille space-y-8 py-24 lg:before:col-span-2 lg:before:col-start-1 lg:before:mt-12 lg:before:h-px lg:before:bg-black"
+>
+  <header class="space-y-6 lg:col-span-6 lg:col-start-3">
+    <h2 class="text-4xl lg:text-6xl">Agenda</h2>
+    <p class="text-xl leading-normal lg:text-3xl">
+      Lieu de création artistique, le conservatoire propose régulièrement des
+      actions culturelles ouvertes à tous.
+    </p>
+  </header>
+  <Button
+    href="#"
+    text="Tous les évènements"
+    classes="lg:col-span-4 lg:col-start-9 lg:self-start lg:justify-self-end"
+  />
+  {
+    [1, 2, 3].map((i) => (
+      <Card
+        title={`Titre de l'événement ${i}`}
+        date="Lundi 15 mars à 20h30"
+        excerpt="Description courte de l'événement à venir au conservatoire."
+        imgFile={imgHero}
+        imgAlt="Image de l'événement"
+      />
+    ))
+  }
+</section>
+```

@@ -1,0 +1,182 @@
+---
+title: Page Agenda
+description: création de la page Agenda
+---
+
+:::note[Branche Git]
+**Branche :** [20.-Page-Agenda](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/20.-Page-Agenda)  
+**N° :** 20
+:::
+
+La page Agenda permet d'afficher la liste de tous les événements à venir du conservatoire. Cette page est construite en utilisant les composants existants (`Layout`, `Hero`, `Card`) et en intégrant les données récupérées depuis PocketBase.
+
+## Structure de base de la page
+
+Créez le fichier `src/pages/agenda/index.astro` avec la structure suivante :
+
+```astro title="src/pages/agenda/index.astro"
+---
+import { Picture } from "astro:assets";
+
+import Layout from "../../layouts/Layout.astro";
+import Hero from "../../components/Hero.astro";
+import Card from "../../components/Card.astro";
+
+import imgHero from "../../assets/img/musique-02.jpg";
+
+const title = "Agenda";
+const description =
+  "Lieu de création artistique, le conservatoire propose régulièrement des actions culturelles ouvertes à tous.";
+---
+
+<Layout title={title} description={description}>
+  <Hero title={title}>
+    <p slot="chapo">
+      Lieu de création artistique, le conservatoire propose régulièrement des
+      actions culturelles ouvertes à tous.
+    </p>
+    <Picture
+      slot="image"
+      src={imgHero}
+      alt="Violoncelles"
+      layout="full-width"
+      pictureAttributes={{ class: "duotone !absolute inset-0 object-cover" }}
+    />
+  </Hero>
+  {/* Le contenu sera ajouté ici */}
+</Layout>
+```
+
+Cette structure reprend les éléments classiques déjà utilisés dans le projet : un layout global, un hero avec image et texte d'introduction.
+
+## Import des données depuis PocketBase
+
+Pour afficher les événements à venir, nous allons utiliser la fonction `getUpcomingEvents` que nous avons créée précédemment dans `backend.mjs`.
+
+Ajoutez l'import et l'appel de la fonction dans le frontmatter :
+
+```astro title="src/pages/agenda/index.astro" ins={10,12}
+---
+import { Picture } from "astro:assets";
+
+import Layout from "../../layouts/Layout.astro";
+import Hero from "../../components/Hero.astro";
+import Card from "../../components/Card.astro";
+
+import imgHero from "../../assets/img/musique-02.jpg";
+
+import { getUpcomingEvents } from "../../js/backend.mjs";
+
+const events = await getUpcomingEvents("event");
+
+const title = "Agenda";
+const description =
+  "Lieu de création artistique, le conservatoire propose régulièrement des actions culturelles ouvertes à tous.";
+---
+```
+
+**Points importants** :
+- L'appel à `getUpcomingEvents("event")` est asynchrone (utilisation de `await`)
+- Le résultat est stocké dans la constante `events` qui contient un tableau d'objets
+- Chaque objet représente un événement avec ses propriétés (title, date, excerpt, imgFile, imgAlt, etc.)
+
+## Affichage des événements avec une boucle
+
+Après le composant `Hero`, ajoutez une section pour afficher les événements sous forme de grille :
+
+```astro title="src/pages/agenda/index.astro"
+<Layout title={title} description={description}>
+  <Hero title={title}>
+    {/* ... Hero content ... */}
+  </Hero>
+  <div class="grille my-24">
+    {
+      events.length > 0 ? (
+        events.map((event) => <Card {...event} />)
+      ) : (
+        <p class="col-span-4">Aucun événement à afficher.</p>
+      )
+    }
+  </div>
+</Layout>
+```
+
+**Explication de la logique** :
+
+1. **Vérification** : `events.length > 0` vérifie s'il y a des événements à afficher
+2. **Boucle avec map** : Si des événements existent, `events.map((event) => ...)` parcourt le tableau et génère un composant `Card` pour chaque événement
+3. **Spread operator** : `{...event}` passe toutes les propriétés de l'objet `event` comme props au composant `Card`
+4. **Fallback** : Si aucun événement n'existe, un message informatif est affiché
+
+:::tip[L'opérateur spread]
+L'opérateur `{...event}` est équivalent à passer chaque propriété individuellement :
+
+```astro
+<Card title={event.title} date={event.date} excerpt={event.excerpt} imgFile={event.imgFile} ... />
+```
+
+Cela simplifie considérablement le code, surtout quand l'objet contient de nombreuses propriétés.
+:::
+
+### Utilisation de la fonction de formatage
+
+```astro title="src/components/Card.astro" ins={2} ins='formatDate(' ins=')'
+---
+import { formatDate } from "../js/helpers";
+import ImagePB from "./ImagePB.astro";
+
+const event = Astro.props;
+---
+  <p class="uppercase">{ formatDate(event.date) }</p>
+```
+
+## Code final complet
+
+Voici le code final de la page Agenda avec toutes les modifications intégrées :
+
+```astro title="src/pages/agenda/index.astro"
+---
+import { Picture } from "astro:assets";
+
+import Layout from "../../layouts/Layout.astro";
+import Hero from "../../components/Hero.astro";
+import Card from "../../components/Card.astro";
+
+import imgHero from "../../assets/img/musique-02.jpg";
+
+import { getUpcomingEvents } from "../../js/backend.mjs";
+
+const events = await getUpcomingEvents("event");
+
+const title = "Agenda";
+const description =
+  "Lieu de création artistique, le conservatoire propose régulièrement des actions culturelles ouvertes à tous.";
+---
+
+<Layout title={title} description={description}>
+  <Hero title={title}>
+    <p slot="chapo">
+      Lieu de création artistique, le conservatoire propose régulièrement des
+      actions culturelles ouvertes à tous.
+    </p>
+    <Picture
+      slot="image"
+      src={imgHero}
+      alt="Violoncelles"
+      layout="full-width"
+      pictureAttributes={{ class: "duotone !absolute inset-0 object-cover" }}
+    />
+  </Hero>
+  <div class="grille my-24">
+    {
+      events.length > 0 ? (
+        events.map((event) => <Card {...event} />)
+      ) : (
+        <p class="col-span-4">Aucun événement à afficher.</p>
+      )
+    }
+  </div>
+</Layout>
+```
+
+La page Agenda est maintenant fonctionnelle et affiche dynamiquement tous les événements à venir récupérés depuis PocketBase, avec leurs images optimisées et leurs dates formatées en français.

@@ -1,0 +1,175 @@
+---
+title: Composant ImagePB
+description: Composant d'image pour PocketBase avec optimisation
+---
+
+import { Image } from "astro:assets";
+import { LinkCard } from "@astrojs/starlight/components";
+import fieldImage from "../../../assets/field-image.webp";
+
+:::note[Branche Git]
+**Branche :** [19.-Composant-Image-PB](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/19.-Composant-Image-PB)  
+**N° :** 19
+:::
+
+Lors de l'intégration de PocketBase dans un projet Astro, plusieurs stratégies peuvent être adoptées pour récupérer et afficher les images stockées. Plutôt que d'inclure la logique de construction des URLs directement dans la collecte des données (`backend.mjs`), il est préférable d'encapsuler cette logique dans un composant spécifique. Voici pourquoi :
+
+**1. Meilleure séparation des responsabilités (SoC)**
+
+Le backend (`backend.mjs`) doit se concentrer sur la récupération des données, tandis que l'affichage et l'optimisation des images relèvent du frontend. Cela évite un mélange de logique et améliore la clarté du code.
+
+**2. Réutilisabilité et simplicité du code**
+
+Un composant unique évite la répétition du code et facilite la gestion des mises à jour. Si la structure des URLs change, il suffit de modifier un seul fichier.
+
+**3. Optimisation et flexibilité**
+
+Un composant permet d'intégrer facilement :
+- L'optimisation des images (avif, webp, lazy loading)
+- Des miniatures (thumb), des classes CSS dynamiques, et des fallbacks
+- Des évolutions (authentification, taille d'image dynamique)
+
+## Étape 1 : Création du composant ImagePB
+
+Créez le fichier `ImagePB.astro` dans le répertoire `src/components` avec la structure de base suivante :
+
+```astro wrap title="src/components/ImagePB.astro"
+---
+import { Picture } from 'astro:assets';
+
+const {
+  record,
+  field = "imgFile",
+  alt,
+  classPicture,
+  classImg,
+  thumb = "1024x1024",
+} = Astro.props;
+---
+
+{imageUrl && (
+  <Picture 
+    pictureAttributes={{ class: classPicture }} 
+    class={classImg}
+    inferSize={true} 
+    formats={['avif', 'webp']} 
+    alt={alt || "Image"} 
+  />
+)}
+```
+
+**Props du composant** :
+- `record` : Un objet représentant un enregistrement de PocketBase
+- `field` : Nom du champ contenant l'URL de l'image (par défaut `"imgUrl"`)
+- `alt` : Texte alternatif pour l'image
+- `classPicture` : Classe CSS appliquée au `<picture>`
+- `classImg` : Classe CSS appliquée à l'`<img>`
+- `thumb` : Taille de l'image par défaut (ex : `"1024x1024"`)
+
+## Étape 2 : Récupération de l'URL depuis PocketBase
+
+:::note[Structure des URLs PocketBase]
+Dans PocketBase, les fichiers (y compris les images) sont stockés dans des collections sous forme de champs de type `file`. Pour récupérer les URL des images stockées, il faut respecter la structure des URLs générées par PocketBase.
+
+L'URL d'une image stockée dans PocketBase suit le format suivant :
+
+```
+http://<URL_POCKETBASE>/api/files/COLLECTION_ID_OR_NAME/RECORD_ID/FILENAME
+```
+
+- `URL_POCKETBASE` : Adresse de votre instance PocketBase
+- `COLLECTION_ID_OR_NAME` : Nom (ou ID) de la collection où est stocké le fichier
+- `RECORD_ID` : Identifiant unique du document contenant l'image
+- `FILENAME` : Nom du fichier image
+:::
+
+<LinkCard
+  title="PocketBase - Files Handling"
+  href="https://pocketbase.io/docs/files-handling/#file-url"
+  description="Documentation officielle sur la gestion des fichiers et la construction des URLs"
+/>
+
+### 2.2 Récupération de l'URL de l'image
+
+Ajoutons maintenant la logique de récupération des URL d'image dans `ImagePB.astro` :
+
+```astro wrap title="src/components/ImagePB.astro" ins={3,7,17}
+---
+import { Picture } from 'astro:assets';
+import { pb } from "../js/backend.mjs";
+
+const { record, field = "imgUrl", alt, classPicture, classImg, thumb = "1024x1024" } = Astro.props;
+
+const imageUrl = record?.[field] ? pb.files.getURL(record, record[field], { thumb }) : null;
+---
+
+{imageUrl && (
+  <Picture 
+    pictureAttributes={{ class: classPicture }} 
+    class={classImg}
+    inferSize={true} 
+    formats={['avif', 'webp']} 
+    alt={alt || "Image"} 
+    src={imageUrl} 
+  />
+)}
+```
+
+**Explication de la logique** :
+
+- `record?.[field]` : Vérifie si `record` existe et contient une valeur pour le champ `field` (par défaut `"imgUrl"`). Utilisation de `?.` (optional chaining) pour éviter une erreur si `record` est `null` ou `undefined`.
+
+- Si `record?.[field]` est défini → appel à `pb.files.getURL(...)`
+  - `pb.files.getURL(...)` est la méthode de PocketBase qui génère l'URL publique d'un fichier stocké
+  - **Arguments** :
+    - `record` : L'enregistrement contenant l'image
+    - `record[field]` : Nom du fichier image stocké dans PocketBase
+    - `{ thumb }` : Option pour récupérer une version miniature de l'image (ex: `"1024x1024"`)
+
+- Sinon (si `record?.[field]` est `null` ou `undefined`) → retourne `null`
+  - Si l'image n'existe pas, `imageUrl` sera `null` et l'image ne s'affichera pas
+
+### Fonctionnalité de recadrage (thumb)
+
+PocketBase propose une fonctionnalité de génération automatique de miniatures et de recadrage d'images via le paramètre `thumb`. Cette fonctionnalité permet d'optimiser les performances en servant des versions redimensionnées des images plutôt que les fichiers originaux.
+
+:::caution[Limitations des formats]
+La fonctionnalité `thumb` est **limitée aux formats suivants** :
+- **jpg** : Support complet
+- **png** : Support complet
+- **gif** : Seule la première frame est traitée
+- **webp** : Support partiel (l'image est convertie et stockée en png)
+
+Les autres formats (avif, svg, etc.) retourneront l'image originale sans transformation.
+:::
+
+**Formats de recadrage supportés** :
+
+- `WxH` (ex: `100x300`) : Recadrage vers une boîte de visualisation WxH (depuis le centre)
+- `WxHt` (ex: `100x300t`) : Recadrage vers une boîte de visualisation WxH (depuis le haut)
+- `WxHb` (ex: `100x300b`) : Recadrage vers une boîte de visualisation WxH (depuis le bas)
+- `WxHf` (ex: `100x300f`) : Ajustement dans une boîte de visualisation WxH (sans recadrage)
+- `0xH` (ex: `0x300`) : Redimensionnement à la hauteur H en préservant le ratio
+- `Wx0` (ex: `100x0`) : Redimensionnement à la largeur W en préservant le ratio
+
+:::note[Configuration dans PocketBase]
+Les tailles de miniatures disponibles doivent être **définies à l'avance** dans les options du champ de type `file` dans l'interface d'administration de PocketBase. Seules les tailles configurées pourront être utilisées via le paramètre `thumb`.
+
+<Image src={fieldImage} alt="Champs image"/>
+
+Si une taille non configurée est demandée, PocketBase retournera l'image originale.
+:::
+
+### Tailles d'images dans la maquette
+
+Dans le cadre de ce projet, deux tailles d'images ont été définies selon leur utilisation dans l'interface :
+
+- **1024x1024** : Image carrée affichée sur la page détail d'un événement
+- **1024x680** : Image rectangulaire affichée dans les composants `Card` (listing des événements)
+
+Ces dimensions doivent être configurées dans PocketBase pour permettre au composant `ImagePB` de les utiliser via le paramètre `thumb`.
+
+
+## Prochaine étape : intégration dans Card.astro
+
+Dans les chapitres suivants, nous verons comment utiliser ce composant Image spécifique pour importer les images de PocketBase dans composant Card et Hero.

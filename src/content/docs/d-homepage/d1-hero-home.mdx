@@ -1,0 +1,28 @@
+---
+title: Hero de la page d'accueil
+description: Composant Hero avec navigation, patterns et image duotone
+---
+
+import { LinkCard, CardGrid } from "@astrojs/starlight/components";
+import { Image } from 'astro:assets';
+
+import heroDesktop from "../../../assets/hero-desktop.webp";
+
+La construction du Hero de la page d'accueil a été réalisée au fil des chapitres précédents sur les UI primitives.
+
+**Rappel des étapes de construction** :
+
+Au chapitre [Composant Hero](/c-ui-primitives/c3-hero), nous avons créé la structure de base du composant avec :
+- La mise en page responsive avec CSS Grid ([version mobile](/c-ui-primitives/c3-hero#étape-3--version-mobile) et [version desktop](/c-ui-primitives/c3-hero#étape-4--version-desktop))
+- Le système de slots nommés pour personnaliser le contenu
+- [L'intégration initiale](/c-ui-primitives/c3-hero#étape-5--intégration-du-composant-dans-la-page-daccueil) dans la page d'accueil avec le slot `chapo`
+- [Les métadonnées SEO](/c-ui-primitives/c3-hero#étape-6--ajout-des-métadonnées-seo)
+
+Au chapitre [Composant Picture](/c-ui-primitives/c4-picture#étape-2--intégration-de-picture-dans-le-hero), nous avons développé un composant d'image optimisé que l'on a utilisé pour l'image de fond du Hero.
+
+Au chapitre [Composant Patterns](/c-ui-primitives/c5-patterns/#étape-8--intégration-des-motifs-sur-la-page-daccueil), nous avons créé les motifs SVG décoratifs avant de les intégrer au Hero.
+
+<Image src={heroDesktop} alt="Hero" />
+
+
+

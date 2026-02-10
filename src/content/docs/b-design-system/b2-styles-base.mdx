@@ -1,0 +1,118 @@
+---
+title: Styles de base
+description: Reset CSS, typographie de base et classes utilitaires
+---
+
+import { LinkCard, Aside } from "@astrojs/starlight/components";
+
+:::note[Branche Git]
+**Branche :** [5.-Styles-de-base](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/5.-Styles-de-base)  
+**N° :** 5
+:::
+
+## Les couches de Tailwind
+
+Tailwind CSS organise les styles en **trois couches principales** :
+
+1. **`@layer base`** : Styles de base et reset CSS (éléments HTML bruts)
+2. **`@layer components`** : Composants réutilisables (ex: `.btn`, `.card`)
+3. **`@layer utilities`** : Classes utilitaires personnalisées (ex: `.text-balance`)
+
+Ces couches sont appliquées dans cet ordre, ce qui garantit que les utilitaires ont toujours la priorité et peuvent surcharger n'importe quel style.
+
+### Preflight : le reset CSS de Tailwind
+
+Tailwind inclut **Preflight**, un reset CSS moderne basé sur [modern-normalize](https://github.com/sindresorhus/modern-normalize) qui :
+
+- Normalise les styles entre navigateurs
+- Supprime les marges/paddings par défaut
+- Définit des styles de base sensés (ex: `box-sizing: border-box`)
+
+<LinkCard
+  title="Preflight - Tailwind CSS"
+  description="Le reset CSS moderne intégré à Tailwind qui normalise les styles entre navigateurs"
+  href="https://tailwindcss.com/docs/preflight"
+/>
+
+## La directive @apply
+
+La directive **`@apply`** permet d'appliquer des classes utilitaires Tailwind directement dans du CSS personnalisé. Elle est particulièrement utile dans la couche `@layer base` pour styliser les éléments HTML sans ajouter de classes.
+
+<Aside type="caution" title="Quand utiliser @apply ?">
+**À utiliser avec modération !** L'avantage principal de Tailwind est d'utiliser les classes utilitaires directement dans le HTML. Réservez `@apply` pour :
+- Les styles de base des éléments HTML (`h1`, `p`, `a`, etc.)
+- Les composants très répétitifs
+- L'intégration avec du code legacy
+
+**Évitez** de créer des classes personnalisées pour chaque composant, privilégiez les classes utilitaires dans vos fichiers `.astro`.
+
+</Aside>
+
+## Typographie responsive
+
+Les tailles de texte doivent s'adapter aux différentes tailles d'écran. Tailwind permet de combiner plusieurs breakpoints pour créer une échelle typographique fluide.
+
+### Principe
+
+```css
+h1 {
+  @apply text-4xl lg:text-6xl;
+  /* Mobile: 2.25rem (36px) → Desktop: 3.75rem (60px) */
+}
+```
+
+## Styles de base
+
+<LinkCard
+  title="Styles de base dans Tailwind"
+  description="Personnalisez les styles de base en ajoutant vos propres styles dans @layer base"
+  href="https://tailwindcss.com/docs/adding-custom-styles#adding-base-styles"
+/>
+
+Ajoutez les styles de bases suivants au fichier `global.css` :
+
+```css wrap title="src/styles/global.css" ins={11-27}
+@import "tailwindcss";
+
+@theme {
+  --color-indigo: oklch(26.53% 0.1502 278.05); /* #1d096b */
+  --color-pink: oklch(82.94% 0.1209 30.54); /* #feaa9b */
+
+  --font-sans: "Mulish Variable", sans-serif;
+  --font-mono: "Space Mono", monospace;
+}
+
+@layer base {
+  body {
+    @apply font-sans text-base leading-normal;
+  }
+  h1 {
+    @apply text-4xl font-mono leading-tight lg:text-6xl;
+  }
+  h2 {
+    @apply text-2xl font-mono leading-tight lg:text-4xl;
+  }
+  h3 {
+    @apply text-xl font-sans font-bold leading-tight my-4;
+  }
+  ::selection {
+    @apply bg-(--color-pink);
+  }
+}
+```
+
+Testez les styles de base en ajoutant des titres dans la page principale :
+
+```astro wrap title="src/pages/index.astro" del={6} ins={7-10}
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout>
+	<h1 class="font-mono text-indigo">Conservatoire Henri Dutilleux</h1>
+  <h1>Conservatoire Henri Dutilleux</h1>
+  <h2>Titre de niveau 2</h2>
+	<h3>Titre de niveau 3</h3>
+	<p>Texte standard</p>
+</Layout>
+```

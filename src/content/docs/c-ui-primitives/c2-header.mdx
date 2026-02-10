@@ -1,0 +1,722 @@
+---
+title: Composant Header
+description: Navigation responsive avec menu hamburger et comportement au scroll
+---
+
+:::note[Branche Git]
+**Branche :** [8.-Composant-Header](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/8.-Composant-Header)  
+**N° :** 8
+:::
+
+Le Header est la barre de navigation principale du site. Il contient le logo, la navigation et un bouton de recherche. Sur mobile, la navigation est cachée derrière un menu hamburger. Le header s'adapte également au scroll de la page en se masquant ou en changeant de couleur.
+
+Commençons par la structure html de base avec les assets :
+
+## Étape 1 : Structure de base
+
+Créons la navigation avec sa liste de liens :
+
+```astro wrap title="src/components/Header.astro" 
+---
+import Logo from "../assets/icones/logo.svg";
+import IconSearch from "../assets/icones/icon_search.svg";
+---
+
+<header>
+  <div>
+    <a href="/" aria-label="Accueil">
+      <Logo />
+    </a>
+  </div>
+
+  <div>
+    <button aria-label="Recherche">
+      <IconSearch />
+    </button>
+
+    <button
+      id="menu-btn"
+      aria-label="Menu"
+      aria-controls="menu"
+      aria-expanded="false"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <!-- Navigation -->
+    <nav id="menu" aria-hidden="true">
+      <ul>
+        <li>
+          <a href="/conservatoire">Le conservatoire</a>
+        </li>
+        <li>
+          <a href="/enseignements">Enseignements</a>
+        </li>
+        <li>
+          <a href="/agenda">Agenda</a>
+        </li>
+        <li>
+          <a href="/contact">Contact</a>
+        </li>
+        <li>
+          <a href="/inscription">S'inscrire</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+```
+**Attributs ARIA** :
+- `aria-label` : indique la nature de l'élément lorsqu'il na pas de contenu textuel
+- `aria-controls="menu"` : Indique quel élément est contrôlé par ce bouton
+- `aria-expanded="false"` : Indique l'état du menu (ouvert/fermé)
+- `aria-hidden="true"` : caché par défaut. JavaScript basculera cet attribut
+
+## Étape 2 : Styles du header, du logo et du bouton de recherche
+
+Ajoutons les classes Tailwind pour le positionnement et les styles de base :
+
+```astro wrap title="src/components/Header.astro" collapse={20-52} ins='class="fixed z-10 flex w-full items-stretch justify-between px-6 py-4 transition-all duration-300 ease-in-out"' ins='class="relative z-20 flex items-center"' ins='class="flex items-center gap-4"' ins='class="flex w-12 justify-center"'
+---
+import Logo from "../assets/icones/logo.svg";
+import IconSearch from "../assets/icones/icon_search.svg";
+---
+
+<header
+  class="fixed z-10 flex w-full items-stretch justify-between px-6 py-4 transition-all duration-300 ease-in-out"
+  id="header"
+>
+  <div class="relative z-20 flex items-center">
+    <a href="/" aria-label="Accueil">
+      <Logo />
+    </a>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <button class="flex w-12 justify-center" aria-label="Recherche">
+      <IconSearch />
+    </button>
+
+    <button
+      id="menu-btn"
+      aria-label="Menu"
+      aria-controls="menu"
+      aria-expanded="false"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <nav id="menu" aria-hidden="true">
+      <ul>
+        <li>
+          <a href="/conservatoire">Le conservatoire</a>
+        </li>
+        <li>
+          <a href="/enseignements">Enseignements</a>
+        </li>
+        <li>
+          <a href="/agenda">Agenda</a>
+        </li>
+        <li>
+          <a href="/contact">Contact</a>
+        </li>
+        <li>
+          <a href="/inscription">S'inscrire</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+```
+
+**Classes header** :
+- `fixed z-10` : Positionné en haut de page, au-dessus du contenu
+- `flex justify-between` : Disposition horizontale avec espace entre logo et menu
+- `w-full` : Prend toute la largeur
+- `transition-all duration-300` : Animations fluides pour les changements d'état
+- `flex items-center gap-4` : Aligne les éléments horizontalement avec espacement
+- `flex w-12 justify-center` : Centre l'icône de recherche
+
+## Étape 3 : Styles du bouton hamburger
+
+Créons l'animation du bouton hamburger avec les trois barres :
+
+```astro wrap title="src/components/Header.astro" collapse={5-20, 37-56} ins='class="group *:ease relative z-20 flex h-6 w-8 flex-col justify-between *:h-0.5 *:w-full *:bg-white *:transition-all *:duration-300"' ins='class="group-aria-expanded:translate-y-[10.5px] group-aria-expanded:rotate-45"' ins='class="group-aria-expanded:opacity-0"' ins='class="group-aria-expanded:-translate-y-[10.5px] group-aria-expanded:-rotate-45"' 
+---
+import Logo from "../assets/icones/logo.svg";
+import IconSearch from "../assets/icones/icon_search.svg";
+---
+
+<header
+  class="fixed z-10 flex w-full items-stretch justify-between px-6 py-4 transition-all duration-300 ease-in-out"
+  id="header"
+>
+  <div class="relative z-20 flex items-center">
+    <a href="/" aria-label="Accueil">
+      <Logo />
+    </a>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <button class="flex w-12 justify-center" aria-label="Recherche">
+      <IconSearch />
+    </button>
+
+    <button
+      class="group *:ease relative z-20 flex h-6 w-8 flex-col justify-between *:h-0.5 *:w-full *:bg-white *:transition-all *:duration-300"
+      id="menu-btn"
+      aria-label="Menu"
+      aria-controls="menu"
+      aria-expanded="false"
+    >
+      <span
+        class="group-aria-expanded:translate-y-[10.5px] group-aria-expanded:rotate-45"
+      ></span>
+      <span class="group-aria-expanded:opacity-0"></span>
+      <span
+        class="group-aria-expanded:-translate-y-[10.5px] group-aria-expanded:-rotate-45"
+      ></span>
+    </button>
+
+    <nav id="menu" aria-hidden="true">
+      <ul>
+        <li>
+          <a href="/conservatoire">Le conservatoire</a>
+        </li>
+        <li>
+          <a href="/enseignements">Enseignements</a>
+        </li>
+        <li>
+          <a href="/agenda">Agenda</a>
+        </li>
+        <li>
+          <a href="/contact">Contact</a>
+        </li>
+        <li>
+          <a href="/inscription">S'inscrire</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+```
+
+**Classes du bouton** :
+- `group` : Permet d'utiliser les variants `group-*` sur les enfants
+- `*:` : Applique les styles à tous les enfants directs (les 3 `<span>`)
+- `*:bg-white *:h-0.5` : Barres blanches de 2px de hauteur
+
+**Animation hamburger → X** :
+- `group-aria-expanded:` : Classes actives quand `aria-expanded="true"`
+- Barre 1 : Se déplace vers le bas et tourne de 45°
+- Barre 2 : Devient invisible
+- Barre 3 : Se déplace vers le haut et tourne de -45°
+
+## Étape 4 : Styles de la navigation mobile
+
+Ajoutons les styles pour le menu plein écran sur mobile :
+
+```astro wrap title="src/components/Header.astro" collapse={5-36} ins='class="visible fixed inset-0 z-10 bg-indigo text-2xl text-white opacity-100 transition-all duration-300 ease-in-out"' ins='class="mx-16 mt-[25vh] *:relative *:overflow-hidden"' ins='class="block px-5 py-4"'
+---
+import Logo from "../assets/icones/logo.svg";
+import IconSearch from "../assets/icones/icon_search.svg";
+---
+
+<header
+  class="fixed z-10 flex w-full items-stretch justify-between px-6 py-4 transition-all duration-300 ease-in-out"
+  id="header"
+>
+  <div class="relative z-20 flex items-center">
+    <a href="/" aria-label="Accueil">
+      <Logo />
+    </a>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <button class="flex w-12 justify-center" aria-label="Recherche">
+      <IconSearch />
+    </button>
+
+    <button
+      class="group *:ease relative z-20 flex h-6 w-8 flex-col justify-between *:h-0.5 *:w-full *:bg-white *:transition-all *:duration-300"
+      id="menu-btn"
+      aria-label="Menu"
+      aria-controls="menu"
+      aria-expanded="false"
+    >
+      <span
+        class="group-aria-expanded:translate-y-[10.5px] group-aria-expanded:rotate-45"
+      ></span>
+      <span class="group-aria-expanded:opacity-0"></span>
+      <span
+        class="group-aria-expanded:-translate-y-[10.5px] group-aria-expanded:-rotate-45"
+      ></span>
+    </button>
+
+    <nav
+      class="visible fixed inset-0 z-10 bg-indigo text-2xl text-white opacity-100 transition-all duration-300 ease-in-out"
+      id="menu"
+      aria-hidden="true"
+    >
+      <ul
+        class="mx-16 mt-[25vh] *:relative *:overflow-hidden"
+      >
+        <li>
+          <a class="block px-5 py-4" href="/conservatoire">
+            Le conservatoire
+          </a>
+        </li>
+        <li>
+          <a class="block px-5 py-4" href="/enseignements">
+            Enseignements
+          </a>
+        </li>
+        <li>
+          <a class="block px-5 py-4" href="/agenda">Agenda</a>
+        </li>
+        <li>
+          <a class="block px-5 py-4" href="/contact">
+            Contact
+          </a>
+        </li>
+        <li>
+          <a class="block px-5 py-4" href="/inscription">S'inscrire</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+```
+
+**Classes navigation mobile** :
+- `fixed inset-0` : Occupe tout l'écran
+- `bg-indigo text-white text-2xl` : Fond indigo avec texte blanc et grande taille
+- `max-lg:aria-hidden:invisible max-lg:aria-hidden:opacity-0` : Caché quand `aria-hidden="true"` sur mobile
+- `transition-all duration-300` : Animation douce à l'ouverture/fermeture
+
+**Classes liste** :
+- `mx-16 mt-[25vh]` : Marges et positionnement vertical centré
+- `block px-5 py-4` : Liens cliquables avec padding généreux
+
+## Étape 5 : Interaction du menu
+
+Créez un répertoire `js` à la racine de `src`. Ajoutez-y un fichier `header.js`.
+
+```js title="src/js/header.js"
+/**
+ * Gestion du menu mobile (hamburger)
+ */
+function initMobileMenu() {
+  const toggle = document.querySelector("#menu-btn");
+  const nav = document.querySelector("#menu");
+  const page = document.body;
+
+  if (toggle && nav) {
+    toggle.addEventListener("click", () => {
+      const isOpen = toggle.ariaExpanded === "true";
+      const isClosed = !isOpen;
+      // Mise à jour des attributs ARIA pour accessibilité
+      toggle.ariaExpanded = String(isClosed);
+      nav.ariaHidden = String(isOpen);
+      page.classList.toggle("overflow-hidden", isClosed);
+    });
+  }
+}
+// Initialisation au chargement du DOM
+initMobileMenu();
+```
+
+### Explication du code JavaScript
+
+**Sélection des éléments** :
+- `#menu-btn` : Le bouton hamburger
+- `#menu` : La navigation à afficher/masquer
+- `document.body` : Pour bloquer le scroll de la page quand le menu est ouvert
+
+**Logique de bascule** :
+1. Au clic sur le bouton, on récupère l'état actuel via `ariaExpanded`
+2. On inverse l'état : si ouvert → fermé, si fermé → ouvert
+3. On met à jour les attributs ARIA pour l'accessibilité
+4. On bloque le scroll de la page (`overflow-hidden`) quand le menu est ouvert
+
+**Pourquoi `String()` ?** :
+Les attributs ARIA attendent des chaînes de caractères, pas des booléens. `String(true)` convertit en `"true"`.
+
+:::tip[Bonnes pratiques]
+- **Vérification de l'existence** : Le `if (toggle && nav)` évite les erreurs si les éléments n'existent pas
+- **ARIA first** : On utilise les attributs ARIA comme source de vérité, pas des classes CSS
+- **Accessibilité** : Les lecteurs d'écran annoncent correctement l'état du menu grâce aux attributs ARIA
+- **UX mobile** : Bloquer le scroll (`overflow-hidden`) évite les interactions confuses quand le menu est ouvert
+:::
+
+```astro wrap title="src/components/Header.astro" collapse={7-36, 42-68} ins={71} ins='max-lg:aria-hidden:invisible max-lg:aria-hidden:opacity-0'
+---
+import Logo from "../assets/icones/logo.svg";
+import IconSearch from "../assets/icones/icon_search.svg";
+---
+
+<header
+  class="fixed z-10 flex w-full items-stretch justify-between px-6 py-4 transition-all duration-300 ease-in-out"
+  id="header"
+>
+  <div class="relative z-20 flex items-center">
+    <a href="/" aria-label="Accueil">
+      <Logo />
+    </a>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <button class="flex w-12 justify-center" aria-label="Recherche">
+      <IconSearch />
+    </button>
+
+    <button
+      class="group *:ease relative z-20 flex h-6 w-8 flex-col justify-between *:h-0.5 *:w-full *:bg-white *:transition-all *:duration-300"
+      id="menu-btn"
+      aria-label="Menu"
+      aria-controls="menu"
+      aria-expanded="false"
+    >
+      <span
+        class="group-aria-expanded:translate-y-[10.5px] group-aria-expanded:rotate-45"
+      ></span>
+      <span class="group-aria-expanded:opacity-0"></span>
+      <span
+        class="group-aria-expanded:-translate-y-[10.5px] group-aria-expanded:-rotate-45"
+      ></span>
+    </button>
+
+    <nav
+      class="visible fixed inset-0 z-10 bg-indigo text-2xl text-white opacity-100 transition-all duration-300 ease-in-out max-lg:aria-hidden:invisible max-lg:aria-hidden:opacity-0"
+      id="menu"
+      aria-hidden="true"
+    >
+      <ul
+        class="mx-16 mt-[25vh] *:relative *:overflow-hidden"
+      >
+        <li>
+          <a class="block px-5 py-4" href="/conservatoire">
+            Le conservatoire
+          </a>
+        </li>
+        <li>
+          <a class="block px-5 py-4" href="/enseignements">
+            Enseignements
+          </a>
+        </li>
+        <li>
+          <a class="block px-5 py-4" href="/agenda">Agenda</a>
+        </li>
+        <li>
+          <a class="block px-5 py-4" href="/contact">
+            Contact
+          </a>
+        </li>
+        <li>
+          <a class="block px-5 py-4" href="/inscription">S'inscrire</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<script src="../js/header.js"></script>
+```
+
+### Variants Tailwind basés sur ARIA
+
+Tailwind permet d'utiliser des variants basés sur les attributs ARIA pour styler les éléments selon leur état :
+
+**Syntaxe générale** :
+```
+aria-[attribut]:[classes]
+```
+
+**Dans notre cas** :
+- `max-lg:aria-hidden:invisible` : Applique `invisible` quand `aria-hidden="true"` sur mobile
+- `max-lg:aria-hidden:opacity-0` : Applique `opacity-0` quand `aria-hidden="true"` sur mobile
+
+**Avantages** :
+- Synchronisation automatique entre l'état ARIA (accessibilité) et les styles visuels
+- JavaScript modifie uniquement `aria-hidden`, le CSS s'adapte automatiquement
+- Plus maintenable que de gérer des classes CSS personnalisées
+
+:::tip[Autres variants ARIA utiles]
+- `aria-expanded:` → Pour les accordéons et dropdowns
+- `aria-selected:` → Pour les onglets et listes sélectionnables
+- `aria-checked:` → Pour les cases à cocher personnalisées
+- `aria-pressed:` → Pour les boutons toggle
+
+Exemple : `aria-expanded:rotate-180` pour faire pivoter une icône de chevron
+:::
+
+## Étape 6 : Styles desktop
+
+Ajoutons les styles pour transformer le menu en navigation horizontale sur desktop :
+
+```astro wrap title="src/components/Header.astro" ins='lg:bg-white lg:py-0' ins='lg:flex-row-reverse' ins='lg:hidden' ins='lg:relative lg:flex lg:items-center lg:bg-transparent lg:text-sm lg:font-bold lg:tracking-wide lg:text-black lg:uppercase lg:opacity-100' ins='lg:m-0 lg:flex *:lg:before:absolute *:lg:before:bottom-0 *:lg:before:left-0 *:lg:before:h-2 *:lg:before:w-full *:lg:before:translate-y-2 *:lg:before:bg-black *:lg:before:transition-all *:lg:before:duration-300 *:lg:before:ease-in-out *:lg:hover:before:translate-y-0' ins='lg:py-8' ins='lg:bg-black lg:px-8 lg:py-8 lg:text-white'
+---
+import Logo from "../assets/icones/logo.svg";
+import IconSearch from "../assets/icones/icon_search.svg";
+---
+
+<header
+  class="fixed z-10 flex w-full items-stretch justify-between px-6 py-4 transition-all duration-300 ease-in-out lg:bg-white lg:py-0"
+  id="header"
+>
+  <div class="relative z-20 flex items-center">
+    <a href="/" aria-label="Accueil">
+      <Logo />
+    </a>
+  </div>
+
+  <div class="flex items-center gap-4 lg:flex-row-reverse">
+    <button class="flex w-12 justify-center" aria-label="Recherche">
+      <IconSearch />
+    </button>
+
+    <button
+      class="group *:ease relative z-20 flex h-6 w-8 flex-col justify-between *:h-0.5 *:w-full *:bg-white *:transition-all *:duration-300 lg:hidden"
+      id="menu-btn"
+      aria-label="Menu"
+      aria-controls="menu"
+      aria-expanded="false"
+    >
+      <span
+        class="group-aria-expanded:translate-y-[10.5px] group-aria-expanded:rotate-45"
+      ></span>
+      <span class="group-aria-expanded:opacity-0"></span>
+      <span
+        class="group-aria-expanded:-translate-y-[10.5px] group-aria-expanded:-rotate-45"
+      ></span>
+    </button>
+
+    <!-- Navigation -->
+    <nav
+      class="visible fixed inset-0 z-10 bg-indigo text-2xl text-white opacity-100 transition-all duration-300 ease-in-out max-lg:aria-hidden:invisible max-lg:aria-hidden:opacity-0 lg:relative lg:flex lg:items-center lg:bg-transparent lg:text-sm lg:font-bold lg:tracking-wide lg:text-black lg:uppercase lg:opacity-100"
+      id="menu"
+      aria-hidden="true"
+    >
+      <ul
+        class="mx-16 mt-[25vh] *:relative *:overflow-hidden lg:m-0 lg:flex *:lg:before:absolute *:lg:before:bottom-0 *:lg:before:left-0 *:lg:before:h-2 *:lg:before:w-full *:lg:before:translate-y-2 *:lg:before:bg-black *:lg:before:transition-all *:lg:before:duration-300 *:lg:before:ease-in-out *:lg:hover:before:translate-y-0"
+      >
+        <li>
+          <a class="block px-5 py-4 lg:py-8" href="/conservatoire"
+            >Le conservatoire</a
+          >
+        </li>
+        <li>
+          <a class="block px-5 py-4 lg:py-8" href="/enseignements"
+            >Enseignements</a
+          >
+        </li>
+        <li>
+          <a class="block px-5 py-4 lg:py-8" href="/agenda">Agenda</a>
+        </li>
+        <li>
+          <a class="block px-5 py-4 lg:py-8" href="/contact">Contact</a>
+        </li>
+        <li>
+          <a
+            class="block px-5 py-4 lg:bg-black lg:px-8 lg:py-8 lg:text-white"
+            href="/inscription">S'inscrire</a
+          >
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<script src="../js/header.js"></script>
+```
+
+**Modifications desktop** :
+- `lg:bg-white lg:py-0` : Fond blanc permanent sur le header
+- `lg:flex-row-reverse` : Inverse l'ordre (navigation avant recherche)
+- `lg:hidden` : Masque le bouton hamburger
+- Navigation : `lg:relative lg:flex` transforme le menu plein écran en navigation horizontale
+- `lg:text-sm lg:font-bold lg:uppercase lg:text-black` : Styles typographiques desktop
+
+**Animation underline au hover** :
+- `*:lg:before:` : Crée un pseudo-élément sous chaque lien
+- `*:lg:before:translate-y-2` : Caché par défaut (en dessous)
+- `*:lg:hover:before:translate-y-0` : Remonte au survol
+
+**Dernier lien** :
+- `lg:bg-black lg:text-white` : Style bouton CTA pour "S'inscrire"
+
+## Étape 7 : Comportement au scroll
+
+Ajoutons maintenant la logique pour masquer/afficher le header au scroll et changer sa couleur de fond.
+
+Modifions le fichier `src/js/header.js` pour ajouter la fonction `initHeaderScroll()` :
+
+```js title="src/js/header.js" collapse={1-20}
+/**
+ * Gestion du menu mobile (hamburger)
+ */
+function initMobileMenu() {
+  const toggle = document.querySelector("#menu-btn");
+  const nav = document.querySelector("#menu");
+  const page = document.body;
+
+  if (toggle && nav) {
+    toggle.addEventListener("click", () => {
+      const isOpen = toggle.ariaExpanded === "true";
+      const isClosed = !isOpen;
+      // Mise à jour des attributs ARIA pour accessibilité
+      toggle.ariaExpanded = String(isClosed);
+      nav.ariaHidden = String(isOpen);
+      page.classList.toggle("overflow-hidden", isClosed);
+    });
+  }
+}
+
+/**
+ * Gestion du comportement du header au scroll
+ * - Ajoute un fond blanc après un certain offset
+ * - Masque/affiche selon le sens du scroll
+ */
+function initHeaderScroll() {
+  const navBar = document.querySelector("#header");
+  if (!navBar) return;
+
+  let lastScrollY = 0;
+  let ticking = false;
+  const offset = 205;
+
+  function handleScroll() {
+    const currentScrollY = window.scrollY;
+    const isPastOffset = currentScrollY > offset;
+
+    // Toggle classes selon la position
+    navBar.classList.toggle("bg-white", isPastOffset);
+    navBar.classList.toggle(
+      "-translate-y-full",
+      currentScrollY > lastScrollY && isPastOffset
+    );
+
+    lastScrollY = currentScrollY;
+    ticking = false;
+  }
+
+  window.addEventListener("scroll", () => {
+    if (!ticking) {
+      window.requestAnimationFrame(handleScroll);
+      ticking = true;
+    }
+  });
+}
+
+// Initialisation au chargement du DOM
+initMobileMenu();
+initHeaderScroll();
+
+```
+
+### Explication de la fonction de scroll
+
+**Variables d'état** :
+- `lastScrollY` : Mémorise la position de scroll précédente pour détecter la direction
+- `ticking` : Flag pour le throttling via `requestAnimationFrame`
+- `offset` : Seuil de 205px avant d'activer les effets
+
+**Logique du fond blanc** :
+```js
+const isPastOffset = currentScrollY > offset;
+navBar.classList.toggle("bg-white", isPastOffset);
+```
+Ajoute `bg-white` après 205px de scroll pour améliorer la lisibilité sur les contenus clairs.
+
+**Logique du masquage** :
+```js
+navBar.classList.toggle(
+  "-translate-y-full",
+  currentScrollY > lastScrollY && isPastOffset
+);
+```
+- Scroll vers le bas + au-delà de l'offset → masque le header (`-translate-y-full`)
+- Scroll vers le haut ou en haut de page → affiche le header
+
+**Optimisation des performances** :
+L'utilisation de `requestAnimationFrame` avec le flag `ticking` limite les calculs au taux de rafraîchissement de l'écran (60 FPS), évitant de traiter chaque événement `scroll` (qui peut se déclencher des centaines de fois par seconde).
+
+:::tip[Test du comportement]
+Pour tester facilement ce comportement, ajoutez une hauteur temporaire au `<main>` dans votre layout :
+```astro title="src/layouts/Layout.astro"
+<main class="h-[2000px] bg-gray-500">
+```
+Cela permettra de scroller et d'observer le comportement du header.
+:::
+
+### Ajustements CSS pour le comportement au scroll
+
+Ajoutons quelques règles CSS pour gérer la couleur des icônes selon l'état du header :
+
+```css wrap title="src/styles/global.css" collapse={2-30} ins={35-40}
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Mulish", sans-serif;
+  --font-mono: "Space Mono", monospace;
+
+  --color-indigo: oklch(26.53% 0.1502 278.05); /* #1d096b */
+  --color-pink: oklch(82.94% 0.1209 30.54); /* #feaa9b */
+
+  --my-grid: repeat(12, minmax(0, 64px));
+}
+
+@layer base {
+  body {
+    @apply font-sans text-base leading-normal;
+  }
+  h1 {
+    @apply font-mono text-4xl leading-tight lg:text-6xl;
+  }
+  h2 {
+    @apply font-mono text-2xl leading-tight lg:text-4xl;
+  }
+  h3 {
+    @apply my-4 font-sans text-xl leading-tight font-bold;
+  }
+  ::selection {
+    @apply bg-(--color-pink);
+  }
+}
+
+@layer components {
+  .grille {
+    @apply px-6 lg:grid lg:grid-cols-(--my-grid) lg:justify-center lg:gap-12;
+  }
+  header.bg-white #menu-btn[aria-expanded="false"] > span {
+    @apply !bg-black;
+  }
+  header:not(.bg-white) button[aria-label="Recherche"] > svg > * {
+    @apply max-lg:stroke-white;
+  }
+}
+```
+
+**Règle 1 : Barres du hamburger en noir sur fond blanc** :
+```css wrap
+header.bg-white #menu-btn[aria-expanded="false"] > span {
+  @apply !bg-black;
+}
+```
+Quand le header a un fond blanc et que le menu est fermé, les barres du hamburger passent en noir pour rester visibles. Le `!` force la règle (important).
+
+**Règle 2 : Icône de recherche blanche sans fond** :
+```css wrap
+header:not(.bg-white) button[aria-label="Recherche"] > svg > * {
+  @apply max-lg:stroke-white;
+}
+```
+Sur mobile, quand le header n'a pas de fond blanc (donc transparent), l'icône de recherche reste blanche.
+
+:::note[Pourquoi ces règles CSS et non Tailwind ?]
+Ces règles combinent des sélecteurs conditionnels complexes (`.bg-white`, `[aria-expanded]`, `:not()`) avec des ciblages profonds (`> svg > *`). Tailwind ne permet pas facilement ce niveau de spécificité dans les classes, d'où l'utilisation de CSS personnalisé dans `@layer components`.
+:::

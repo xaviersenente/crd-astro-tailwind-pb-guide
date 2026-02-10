@@ -1,0 +1,144 @@
+---
+title: Création de la page 404
+description: Gérer les erreurs avec une page personnalisée
+---
+
+:::note[Branche Git]
+**Branche :** [22.-Page-404](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/22.-Page-404)  
+**N° :** 22
+:::
+
+## Introduction
+
+Dans le template d'événement que nous avons créé précédemment, nous avons ajouté une vérification pour gérer le cas où un événement n'existe pas :
+
+```js title="src/pages/agenda/event/[slug].astro"
+const { event } = Astro.props;
+
+if (!event) {
+  return Astro.redirect("/404");
+}
+```
+
+Cette redirection pointe vers une page **404 personnalisée** que nous allons maintenant créer. Une bonne page d'erreur 404 :
+
+- Informe l'utilisateur que la page n'existe pas de manière claire et sympathique
+- Maintient l'identité visuelle du site
+- Aide l'utilisateur à retrouver son chemin (liens de navigation, boutons...)
+
+:::tip[Pages d'erreur dans Astro]
+Astro affiche automatiquement la page `src/pages/404.astro` lorsqu'une route n'est pas trouvée. C'est le standard pour les pages d'erreur 404.
+:::
+
+## Création de la page 404
+
+### Structure du fichier
+
+Créez le fichier `src/pages/404.astro` avec le code suivant :
+
+```astro title="src/pages/404.astro"
+---
+import { Picture } from "astro:assets";
+
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
+
+import imgHero from "../assets/img/agenda-musique-09.jpg";
+
+const title = "Page introuvable";
+const description =
+  "La page que vous recherchez n'existe pas ou a été déplacée.";
+---
+
+<Layout title={title} description={description}>
+  <Hero title="Oups ! Cette page n'existe pas">
+    <p slot="chapo">
+      La page que vous recherchez semble avoir pris une fausse note... Elle
+      n'existe plus ou a changé d'adresse.
+    </p>
+    <Picture
+      slot="image"
+      src={imgHero}
+      alt="Violoncelles"
+      layout="full-width"
+      pictureAttributes={{ class: "duotone !absolute inset-0 object-cover" }}
+    />
+  </Hero>
+</Layout>
+```
+
+## Fonctionnement dans Astro
+
+### Redirection automatique
+
+Astro gère automatiquement les pages 404 :
+
+1. **En développement** (`npm run dev`) : si vous accédez à une URL inexistante, Astro affiche `404.astro`
+2. **En production** : le serveur web retourne le code HTTP 404 avec le contenu de cette page
+
+### Cas d'usage de la redirection
+
+La redirection `Astro.redirect("/404")` dans le template d'événement est utile dans plusieurs cas :
+
+- Accès à un ID d'événement qui n'existe pas ou plus
+- ID malformé ou corrompu dans l'URL
+- Événement supprimé de la base de données
+
+```js
+// Dans [slug].astro
+const { event } = Astro.props;
+
+if (!event) {
+  return Astro.redirect("/404");  // Redirige vers notre page personnalisée
+}
+```
+
+:::caution[Mode Static vs SSR]
+Dans notre configuration en **mode static**, cette vérification n'est qu'une sécurité supplémentaire car toutes les pages sont générées au build via `getStaticPaths()`. Elle serait plus utile en **mode SSR** où les pages sont générées à la demande.
+:::
+
+## Améliorations possibles
+
+Voici quelques améliorations que vous pourriez apporter à cette page 404 :
+
+### 1. Ajouter des liens de navigation
+
+```astro
+<div slot="cta">
+  <Button href="/" text="Retour à l'accueil" />
+  <Button href="/agenda" text="Voir l'agenda" variant="outlined" />
+</div>
+```
+
+### 2. Afficher des événements suggérés
+
+```astro
+---
+import { getNextEvents } from "../js/backend.mjs";
+const events = await getNextEvents(3);
+---
+
+<!-- Dans le body -->
+<section>
+  <h2>Découvrez nos prochains événements</h2>
+  {events.map(event => <Card {...event} />)}
+</section>
+```
+
+### 3. Ajouter un moteur de recherche
+
+```astro
+<div slot="search">
+  <input type="search" placeholder="Rechercher..." />
+</div>
+```
+
+## Test de la page 404
+
+Pour tester votre page 404 :
+
+1. Accédez à une URL inexistante, par exemple :
+   - [http://localhost:4321/page-qui-nexiste-pas](http://localhost:4321/page-qui-nexiste-pas)
+   - [http://localhost:4321/agenda/event/id-inexistant](http://localhost:4321/agenda/event/id-inexistant)
+
+2. Vérifiez que votre page 404 personnalisée s'affiche correctement

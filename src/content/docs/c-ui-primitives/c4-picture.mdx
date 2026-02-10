@@ -1,0 +1,285 @@
+---
+title: Composant Picture et effet Duotone
+description: Optimisation des images avec Astro et effet bichromie
+---
+
+import { Image } from 'astro:assets';
+import { LinkCard, CardGrid } from "@astrojs/starlight/components";
+import duotone from "../../../assets/duotone.webp";
+
+:::note[Branche Git]
+**Branche :** [10.-Composant-Image](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/10.-Composant-Image)  
+**N° :** 10
+:::
+
+Astro propose deux composants natifs pour gérer les images de manière optimisée : `<Image>` et `<Picture>`. Ces composants génèrent automatiquement plusieurs formats d'images (WebP, AVIF) et différentes tailles pour améliorer les performances.
+
+<LinkCard
+  title="Composants Image et Picture"
+  href="https://docs.astro.build/fr/guides/images/"
+  description="Astro propose plusieurs façons d’utiliser les images, qu’elles soient stockées localement dans le projet, liées à une URL externe ou gérées dans un CMS ou un CDN."
+/>
+
+## Étape 1 : Les composants Image et Picture d'Astro
+
+### Différences entre Image et Picture
+
+**[`<Image>`](https://docs.astro.build/fr/guides/images/#image-)** : Composant simple pour une seule image optimisée
+- Génère une balise `<img>` avec un seul format
+- Idéal pour les images fixes de taille connue
+- Supporte les transformations (resize, format, qualité)
+
+**[`<Picture>`](https://docs.astro.build/fr/guides/images/#picture-)** : Composant avancé pour responsive images
+- Génère une balise `<picture>` avec plusieurs `<source>`
+- Supporte plusieurs formats (WebP, AVIF, fallback)
+- Gère automatiquement les différentes résolutions (1x, 2x)
+- Idéal pour les images pleine largeur ou critiques pour le LCP
+
+### Exemple d'utilisation basique
+
+```astro wrap
+---
+import { Image, Picture } from "astro:assets";
+import monImage from "../assets/img/photo.jpg";
+---
+
+<!-- Image simple -->
+<Image 
+  src={monImage} 
+  alt="Description" 
+  width={800}
+  height={600}
+/>
+
+<!-- Picture avec formats multiples -->
+<Picture
+  src={monImage}
+  alt="Description"
+  formats={['avif', 'webp']}
+  widths={[400, 800, 1200]}
+/>
+```
+
+**Avantages d'Astro** :
+- Optimisation automatique à la compilation
+- Génération de plusieurs formats et tailles
+- Pas de bundle JavaScript nécessaire
+- Support TypeScript pour les imports d'images
+- Attributs `width` et `height` automatiques (évite le CLS)
+
+:::tip[Performance]
+Le composant `<Picture>` est recommandé pour les images hero et les images de contenu importantes. Il génère automatiquement des formats modernes (AVIF, WebP) avec fallback, réduisant significativement le poids des images.
+:::
+
+## Étape 2 : Intégration de Picture dans le Hero
+
+Modifiez la page d'accueil depuis `src/pages/index.astro` de la manière suivante :
+
+```astro wrap title="src/pages/index.astro" ins={2,10,29-35}
+---
+import { Picture } from "astro:assets";
+
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
+
+import IconMusique from "../assets/icones/icon_musique.svg";
+import IconTheatre from "../assets/icones/icon_theatre.svg";
+import IconDanse from "../assets/icones/icon_danse.svg";
+import imgHero from "../assets/img/musique-01.jpg";
+
+const title = "Conservatoire Henri Dutilleux";
+const subTitle = "Conservatoire à Rayonnement Départemental du Grand Belfort";
+const description =
+  "Le Conservatoire Henri Dutilleux de Belfort vous accueille pour découvrir la musique, la danse et le théâtre.";
+---
+
+<Layout title={title} description={description}>
+  <Hero title={title} subTitle={subTitle}>
+    <div class="flex-1 font-mono lg:text-3xl" slot="chapo">
+      <ul
+        class="grid grid-cols-3 gap-12 *:flex *:flex-col *:items-center *:gap-4 *:lg:flex-row"
+      >
+        <li><IconMusique /> Musique</li>
+        <li><IconTheatre /> Théâtre</li>
+        <li><IconDanse /> Danse</li>
+      </ul>
+    </div>
+    <Picture
+      slot="image"
+      src={imgHero}
+      alt="Violoncelles"
+      layout="full-width"
+      pictureAttributes={{ class: "absolute inset-0 object-cover" }}
+    />
+  </Hero>
+</Layout>
+```
+
+**Explications des attributs Picture** :
+- `layout="full-width"` : Définit le comportement responsive de l'image (voir ci-dessous)
+- `pictureAttributes` : Attributs appliqués à la balise `<picture>`
+
+**Classes de positionnement** :
+- `absolute inset-0` : Positionne la picture en absolu sur tout le container
+- `object-cover` : L'image couvre tout l'espace en conservant ses proportions
+
+### Valeurs de l'attribut layout
+
+L'attribut [`layout`](https://docs.astro.build/fr/reference/modules/astro-assets/#layout) contrôle comment l'image s'adapte aux différentes tailles d'écran :
+
+**`layout="constrained"`** :
+- L'image se réduit pour s'adapter au conteneur en conservant son ratio d'aspect
+- Ne s'agrandit jamais au-delà de `width` et `height` spécifiés ou des dimensions originales
+- Nécessite `width` et `height` pour calculer le ratio et éviter le CLS (Cumulative Layout Shift)
+- Génère plusieurs tailles d'images pour différents écrans
+- Idéal pour les images de contenu, articles, galeries
+- *Comportement par défaut avec Tailwind*
+
+**`layout="full-width"`** :
+- L'image remplit toute la largeur de son conteneur parent
+- S'adapte en largeur tout en conservant le ratio d'aspect
+- Génère automatiquement plusieurs tailles (640, 750, 828, 1080, 1200, 1920, 2048, 3840px)
+- Idéal pour les images hero, bannières pleine largeur, images de fond
+
+**`layout="fixed"`** :
+- L'image conserve les dimensions demandées définies par `width` et `height`
+- Ne se redimensionne pas selon le container
+- Génère des variantes 1x et 2x pour les écrans haute densité (Retina)
+- Idéal pour les logos, icônes, avatars de taille fixe
+
+**`layout="none"`** :
+- Désactive les images adaptatives
+- Aucun attribut `srcset` ou `sizes` généré automatiquement
+- Aucun style appliqué
+- Utile pour contrôle manuel complet
+
+:::tip[Choix du layout]
+- **Images de contenu, articles** → `layout="constrained"` (recommandé en cas de doute)
+- **Hero, bannières pleine largeur** → `layout="full-width"`
+- **Logos, icônes, avatars** → `layout="fixed"`
+- **Contrôle manuel complet** → `layout="none"`
+:::
+
+:::note[Comportement des images adaptatives]
+Depuis Astro v5, le composant `<Picture>` génère automatiquement des tailles d'images adaptatives basées sur les breakpoints standards (640, 750, 828, 1080, 1200, 1920, 2048, 3840). Vous pouvez également spécifier manuellement les `widths` pour un contrôle plus fin.
+
+Le navigateur choisit automatiquement la taille la plus adaptée selon :
+- La résolution de l'écran (DPR : Device Pixel Ratio)
+- La largeur d'affichage réelle du container
+- Les conditions réseau (sur certains navigateurs)
+
+[En savoir plus sur le comportement adaptatif](https://docs.astro.build/fr/guides/images/#comportement-des-images-adaptatives)
+:::
+
+## Étape 3 : Ajout de l'effet Duotone (Bichromie)
+
+L'effet duotone transforme une image en deux tons de couleur. C'est un effet visuel élégant pour les images de fond.
+
+### Ajout du composant CSS
+
+Dans `src/styles/global.css`, ajoutez le composant duotone dans la layer `@layer components` :
+
+```css wrap title="src/styles/global.css" collapse={1-30, 32-40} ins={41-46}
+@import "tailwindcss";
+
+@theme {
+  --color-indigo: oklch(26.53% 0.1502 278.05); /* #1d096b */
+  --color-pink: oklch(82.94% 0.1209 30.54); /* #feaa9b */
+
+  --font-sans: "Mulish Variable", sans-serif;
+  --font-mono: "Space Mono", monospace;
+
+  --my-grid: repeat(12, minmax(0, 64px));
+}
+
+@layer base {
+  body {
+    @apply font-sans text-base leading-normal;
+  }
+  h1 {
+    @apply font-mono text-4xl leading-tight lg:text-6xl;
+  }
+  h2 {
+    @apply font-mono text-2xl leading-tight lg:text-4xl;
+  }
+  h3 {
+    @apply my-4 font-sans text-xl leading-tight font-bold;
+  }
+  ::selection {
+    @apply bg-pink;
+  }
+}
+
+@layer components {
+  .grille {
+    @apply px-6 lg:grid lg:grid-cols-(--my-grid) lg:justify-center lg:gap-12;
+  }
+  header.bg-white #menu-btn[aria-expanded="false"] > span {
+    @apply !bg-black;
+  }
+  header:not(.bg-white) button[aria-label="Recherche"] > svg > * {
+    @apply max-lg:stroke-white;
+  }
+  .duotone {
+    @apply relative flex overflow-hidden bg-pink before:absolute before:inset-0 before:z-1 before:bg-indigo before:mix-blend-lighten before:transition-all before:duration-300 before:ease-in-out;
+    img {
+      @apply flex-[1_0_100%] object-cover mix-blend-multiply grayscale transition-all duration-300 ease-in-out;
+    }
+  }
+}
+```
+<Image src={duotone} alt="test" />
+
+### Décomposition de l'effet duotone
+
+**Container `.duotone`** :
+- `relative` : Contexte de positionnement pour le pseudo-élément
+- `flex overflow-hidden` : Conteneur flex qui masque les débordements
+- `bg-pink` : Fond rose (première couleur du duotone)
+
+**Pseudo-élément `::before`** :
+- `before:absolute before:inset-0 before:z-1` : Calque absolu qui couvre toute la surface
+- `before:bg-indigo` : Fond indigo (seconde couleur du duotone)
+- `before:mix-blend-lighten` : Mode de fusion "lighten" pour créer l'effet bicolore
+
+**Image `img`** :
+- `flex-[1_0_100%]` : Flex basis de 100% (prend tout l'espace disponible)
+- `object-cover` : Couvre l'espace en conservant le ratio
+- `mix-blend-multiply` : Mode de fusion "multiply" avec les couleurs du fond
+- `grayscale` : Convertit l'image en niveaux de gris
+
+**Transitions** :
+- `transition-all duration-300 ease-in-out` : Animations douces pour interactions futures
+
+:::tip[Comment fonctionne l'effet duotone ?]
+1. L'image est convertie en niveaux de gris (`grayscale`)
+2. Le mode `multiply` multiplie les pixels de l'image avec le fond rose
+3. Le pseudo-élément indigo avec `lighten` éclaircit les zones claires
+4. Résultat : Les zones sombres deviennent roses, les zones claires deviennent indigo/blanc
+:::
+
+### Application de l'effet duotone
+
+Modifiez le composant Picture pour ajouter la classe `duotone` :
+
+```astro wrap title="src/pages/index.astro" ins='duotone'
+<Picture
+  src={imgHero}
+  alt="Violoncelles"
+  layout="full-width"
+  pictureAttributes={{ class:"duotone absolute inset-0 object-cover" }}
+/>
+```
+
+L'effet duotone est maintenant appliqué à l'image de fond du Hero !
+
+
+## Récapitulatif
+
+Nous avons vu :
+1. **Les composants Astro** : `<Image>` pour les images simples, `<Picture>` pour les images optimisées responsive
+2. **L'optimisation automatique** : Génération de plusieurs formats (AVIF, WebP) et tailles
+3. **L'effet duotone** : Transformation bicolore d'une image via CSS et modes de fusion
+4. **La composition** : Combinaison de Picture + duotone + positionnement absolu pour un Hero impactant
+
+Cette approche combine performance (images optimisées) et esthétique (effet duotone) pour créer un Hero visuellement fort tout en restant rapide à charger.

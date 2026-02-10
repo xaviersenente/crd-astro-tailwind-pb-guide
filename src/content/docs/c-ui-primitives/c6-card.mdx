@@ -1,0 +1,340 @@
+---
+title: Composant Card
+description: Construction d'une carte événement avec grid CSS et effet duotone interactif
+---
+import { Image } from 'astro:assets';
+import card from "../../../assets/card.webp";
+import cardGrid from "../../../assets/card-grid.webp";
+import cardHover from "../../../assets/card-hover.mp4";
+
+:::note[Branche Git]
+**Branche :** [12.-Composant-Card](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/12.-Composant-Card)  
+**N° :** 12
+:::
+
+Le composant Card est une carte événement qui combine une image de fond, un titre superposé et une boîte de contenu positionnée avec CSS Grid. L'effet duotone s'anime au survol pour révéler les couleurs originales de l'image.
+
+<Image src={card} alt="card"/>
+
+## Étape 1 : Création du composant et structure de base
+
+Créez le fichier `Card.astro` dans `src/components/` avec la structure HTML de base :
+
+```astro wrap title="src/components/Card.astro"
+---
+import { Picture } from "astro:assets";
+const event = Astro.props;
+---
+
+<article>
+  <Picture src={event.imgFile} alt={event.imgAlt}/>
+  <h3>
+    <a href="#">{event.title}</a>
+  </h3>
+  <div>
+    <p>{event.date}</p>
+    <p>{event.excerpt}</p>
+    <a href="#">Plus d'info</a>
+  </div>
+</article>
+```
+
+### Utilisation d'une props unique `event`
+
+Le composant Card utilise une approche **objet unique** pour gérer ses props : `const event = Astro.props;` plutôt que de déstructurer chaque propriété individuellement.
+
+**Approche objet unique (utilisée ici)** :
+```js
+const event = Astro.props;
+// Accès : event.title, event.date, event.excerpt...
+```
+
+**Approche déstructurée (alternative)** :
+```js
+const { title, date, excerpt, imgFile, imgAlt } = Astro.props;
+// Accès : title, date, excerpt...
+```
+
+**Avantages de l'approche objet unique** :
+
+1. **Clarté sémantique** : `event.title` est plus explicite que `title` seul
+2. **Évolutivité** : Ajouter de nouvelles propriétés ne nécessite pas de modifier la signature
+3. **Compatibilité future** : Prépare le composant à recevoir des objets depuis une base de données (PocketBase)
+4. **Pas de conflit de noms** : Évite les collisions avec d'autres variables locales
+
+Dans les chapitres suivants sur PocketBase, nous verrons comment passer directement un enregistrement de base de données au composant :
+
+```astro
+<Card event={eventRecord} />
+```
+
+Cette approche rend le composant flexible et prêt à fonctionner avec différentes sources de données.
+
+
+## Étape 2 : Configuration du grid CSS
+
+<Image src={cardGrid} alt="card grille"/>
+
+Ajoutez le système de grille pour positionner les éléments :
+
+```astro wrap title="src/components/Card.astro" ins='col-span-4 grid grid-cols-[24px_1fr] grid-rows-[200px_48px_1fr] lg:grid-cols-[2fr_11fr]'
+---
+import { Picture } from "astro:assets";
+const event = Astro.props;
+---
+
+<article class="group col-span-4 grid grid-cols-[24px_1fr] grid-rows-[200px_48px_1fr] lg:grid-cols-[2fr_11fr]">
+  <Picture src={event.imgFile} alt={event.imgAlt}/>
+  <h3>
+    <a href="#">{event.title}</a>
+  </h3>
+  <div>
+    <p>{event.date}</p>
+    <p>{event.excerpt}</p>
+    <a href="#">Plus d'info</a>
+  </div>
+</article>
+```
+
+**Décomposition du grid mobile** (`grid-cols-[24px_1fr]` et `grid-rows-[200px_48px_1fr]`) :
+
+**Colonnes** :
+- Colonne 1 : `24px` (marge gauche fixe)
+- Colonne 2 : `1fr` (contenu flexible)
+
+**Lignes** :
+- Ligne 1 : `200px` (hauteur de l'image)
+- Ligne 2 : `48px` (zone de chevauchement titre/contenu)
+- Ligne 3 : `1fr` (reste du contenu)
+
+**Grid desktop** (`lg:grid-cols-[2fr_11fr]`) :
+- Colonne 1 : `2fr` (image à gauche, 2 parts)
+- Colonne 2 : `11fr` (contenu à droite, 11 parts)
+
+**Largeur de la card** (`col-span-4`) :
+- Occupe 4 colonnes de la grille parente (définie dans la page)
+
+:::tip[Valeurs grid personnalisées avec Tailwind]
+La syntaxe `grid-cols-[24px_1fr]` permet de définir des valeurs de grille personnalisées directement dans les classes utilitaires. Les valeurs entre crochets sont injectées comme CSS custom properties.
+:::
+
+## Étape 3 : Ajout de l'image avec Picture et duotone
+
+Importez le composant Picture et l'image, puis positionnez-la sur la grille :
+
+```astro wrap title="src/components/Card.astro" ins='pictureAttributes={{ class: "duotone col-start-1 row-start-1 col-span-2 row-span-2" }}'
+---
+import { Picture } from "astro:assets";
+const event = Astro.props;
+---
+
+<article
+  class="group col-span-4 grid grid-cols-[24px_1fr] grid-rows-[200px_48px_1fr] lg:grid-cols-[2fr_11fr]"
+>
+  <Picture
+    src={event.imgFile}
+    alt={event.imgAlt}
+    pictureAttributes={{ class: "duotone col-start-1 row-start-1 col-span-2 row-span-2" }}
+  />
+  <h3>
+    <a href="#">{event.title}</a>
+  </h3>
+  <div>
+    <p>{event.date}</p>
+    <p>{event.excerpt}</p>
+    <a href="#">Plus d'info</a>
+  </div>
+</article>
+```
+
+**Positionnement de l'image** :
+- `col-start-1` : Démarre à la colonne 1
+- `row-start-1` : Démarre à la ligne 1
+- `col-span-2` : S'étend sur 2 colonnes (toute la largeur)
+- `row-span-2` : S'étend sur 2 lignes (image + zone de chevauchement)
+- `duotone` : Applique l'effet bichromie (voir [chapitre Picture](c4-picture.mdx))
+
+**Résultat visuel** :
+```
+┌─────────────────┐
+│     Image       │ ← ligne 1 (200px)
+│    (duotone)    │
+├─────────────────┤
+│  Chevauchement  │ ← ligne 2 (48px)
+├─────────────────┤
+│    Contenu      │ ← ligne 3 (1fr)
+└─────────────────┘
+```
+
+## Étape 4 : Positionnement du titre superposé
+
+Ajoutez les classes de positionnement et de style au titre :
+
+```astro wrap title="src/components/Card.astro" ins='z-1 col-start-2 row-start-1 my-6 mr-4 self-end font-mono text-3xl text-white'
+---
+import { Picture } from "astro:assets";
+const event = Astro.props;
+---
+
+<article
+  class="group col-span-4 grid grid-cols-[24px_1fr] grid-rows-[200px_48px_1fr] lg:grid-cols-[2fr_11fr]"
+>
+  <Picture
+    src={event.imgFile}
+    alt={event.imgAlt}
+    pictureAttributes={{ class: "duotone col-start-1 row-start-1 col-span-2 row-span-2" }}
+  />
+  <h3 class="z-1 col-start-2 row-start-1 my-6 mr-4 self-end font-mono text-3xl text-white">
+    <a href="#">{event.title}</a>
+  </h3>
+  <div>
+    <p>{event.date}</p>
+    <p>{event.excerpt}</p>
+    <a href="#">Plus d'info</a>
+  </div>
+</article>
+```
+
+**Positionnement sur le grid** :
+- `col-start-2` : Colonne 2 (après la marge de 24px)
+- `row-start-1` : Ligne 1 (sur l'image)
+- `z-1` : Au-dessus de l'image (z-index: 1)
+
+**Alignement vertical** :
+- `self-end` : Alignement en bas de la cellule grid
+- `my-6` : Marge verticale (24px haut et bas)
+- `mr-4` : Marge droite (16px)
+
+**Styles de texte** :
+- `font-mono` : Police monospace (Space Mono)
+- `text-3xl` : Taille de texte 30px
+- `text-white` : Couleur blanche pour contraster avec l'image
+
+:::note[z-index avec Tailwind]
+Les classes `z-{n}` de Tailwind génèrent des `z-index` CSS. `z-1` génère `z-index: 1`. L'image reste à `z-index: 0` (par défaut), le titre à `z-1`, et la boîte de contenu à `z-2`.
+:::
+
+## Étape 5 : Ajout de la boîte de contenu
+
+Positionnez et stylisez la boîte de contenu :
+
+```astro wrap title="src/components/Card.astro" ins='z-2 col-span-1 col-start-2 row-span-2 row-start-2 space-y-4 bg-white p-6' ins='class="uppercase"' ins='class="inline-block border-b-2 border-black uppercase"'
+---
+import { Picture } from "astro:assets";
+const event = Astro.props;
+---
+
+<article
+  class="group col-span-4 grid grid-cols-[24px_1fr] grid-rows-[200px_48px_1fr] lg:grid-cols-[2fr_11fr]"
+>
+  <Picture
+    src={event.imgFile}
+    alt={event.imgAlt}
+    pictureAttributes={{ class: "duotone col-start-1 row-start-1 col-span-2 row-span-2" }}
+  />
+  <h3 class="z-1 col-start-2 row-start-1 my-6 mr-4 self-end font-mono text-3xl text-white">
+    <a href="#">{event.title}</a>
+  </h3>
+  <div class="z-2 col-span-1 col-start-2 row-span-2 row-start-2 space-y-4 bg-white p-6">
+    <p class="uppercase">{event.date}</p>
+    <p>{event.excerpt}</p>
+    <a
+      class="inline-block border-b-2 border-black uppercase"
+      href="#">Plus d'info</a>
+  </div>
+</article>
+```
+
+**Positionnement sur le grid** :
+- `col-start-2` : Colonne 2 (alignée avec le titre)
+- `col-span-1` : Une seule colonne
+- `row-start-2` : Ligne 2 (zone de chevauchement)
+- `row-span-2` : S'étend sur lignes 2 et 3
+- `z-2` : Au-dessus du titre et de l'image (z-index: 2)
+
+**Styles de la boîte** :
+- `bg-white` : Fond blanc opaque
+- `p-6` : Padding 24px sur tous les côtés
+- `space-y-4` : Espacement vertical 16px entre les enfants
+
+**Styles du contenu** :
+- Date : `uppercase` (majuscules)
+- Lien : `inline-block border-b-2 border-black uppercase` (soulignement, majuscules)
+
+**Résultat visuel (superposition des éléments)** :
+```
+┌─────────────────┐
+│   Image (z-0)   │
+│                 │
+│   Titre (z-1) ←─┼─ Superposé sur l'image
+├────┬────────────┤
+│Img │  Box (z-2) │ ← Chevauche l'image
+│    │  Contenu   │
+│    └────────────┤
+└─────────────────┘
+```
+
+## Étape 6 : Ajout des effets hover
+
+<video src={cardHover} controls loop muted style="max-width: 100%; height: auto; border-radius: 8px;"></video>
+
+
+Ajoutez les animations au survol pour révéler les couleurs originales de l'image :
+
+```astro wrap title="src/components/Card.astro" ins='group-hover:before:bg-black' ins='class="group-hover:grayscale-0 group-hover:mix-blend-normal"'
+---
+import { Picture } from "astro:assets";
+const event = Astro.props;
+---
+
+<article
+  class="group col-span-4 grid grid-cols-[24px_1fr] grid-rows-[200px_48px_1fr] lg:grid-cols-[2fr_11fr]"
+>
+  <Picture
+    src={event.imgFile}
+    alt={event.imgAlt}
+    pictureAttributes={{ class: "duotone col-start-1 row-start-1 col-span-2 row-span-2 group-hover:before:bg-black" }}
+    class="group-hover:grayscale-0 group-hover:mix-blend-normal"
+  />
+  <h3 class="z-1 col-start-2 row-start-1 my-6 mr-4 self-end font-mono text-3xl text-white">
+    <a href="#">{event.title}</a>
+  </h3>
+  <div class="z-2 col-span-1 col-start-2 row-span-2 row-start-2 space-y-4 bg-white p-6">
+    <p class="uppercase">{event.date}</p>
+    <p>{event.excerpt}</p>
+    <a
+      class="inline-block border-b-2 border-black uppercase"
+      href="#">Plus d'info</a>
+  </div>
+</article>
+```
+
+**Effets sur le pseudo-élément `::before` du duotone** :
+- `group-hover:before:bg-black` : Au survol de `.group`, le calque indigo devient noir
+
+**Effets sur l'image `<img>` à l'intérieur de Picture** :
+- `group-hover:grayscale-0` : Retire le filtre grayscale (révèle les couleurs)
+- `group-hover:mix-blend-normal` : Désactive le mode de fusion multiply
+
+**Comment ça fonctionne** :
+
+**État normal** :
+- Image en niveaux de gris (`grayscale`)
+- Mode de fusion `multiply` avec fond rose → tons roses/indigo (duotone)
+- Pseudo-élément `::before` avec fond indigo et mode `lighten`
+
+**État hover** :
+- Image en couleurs (`grayscale-0`)
+- Mode de fusion `normal` → couleurs originales visibles
+- Pseudo-élément avec fond noir → assombrit l'image pour créer du contraste
+
+**Résultat visuel** :
+```
+Normal : Image duotone (rose/indigo)
+Hover  : Image en couleurs avec overlay noir semi-transparent
+```
+
+:::tip[Transitions duotone]
+Les transitions CSS définies dans la classe `.duotone` (voir [c4-picture.mdx](c4-picture.mdx)) rendent l'animation fluide avec `transition-all duration-300 ease-in-out`.
+:::
+

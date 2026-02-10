@@ -1,0 +1,374 @@
+---
+title: Template d'événement
+description: Créer des pages dynamiques avec getStaticPaths
+---
+
+:::note[Branche Git]
+**Branche :** [21.-Template-évènement](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/21.-Template-évènement)  
+**N° :** 21
+:::
+
+## Introduction
+
+Maintenant que nous avons mis en place la collecte de données et l'affichage des événements sur la page d'accueil, nous allons créer un **template de page dynamique** qui permettra d'afficher les détails complets de chaque événement.
+
+Dans ce chapitre, nous allons découvrir :
+
+- La syntaxe `[slug].astro` pour créer des routes dynamiques
+- Le mode **static** d'Astro et la fonction `getStaticPaths()`
+- Comment générer automatiquement une page HTML pour chaque événement au moment du build
+- L'ajout de liens dans le composant `Card` pour naviguer vers les pages d'événements
+
+## Pages dynamiques avec [slug].astro
+
+### Qu'est-ce qu'une route dynamique ?
+
+Dans une application web classique, chaque page correspond à un fichier HTML. Mais lorsque vous avez des dizaines ou des centaines de contenus similaires (articles, produits, événements...), il serait fastidieux de créer manuellement un fichier pour chacun.
+
+Les **routes dynamiques** permettent de créer un **modèle de page unique** qui sera utilisé pour générer automatiquement toutes les pages de vos événements.
+
+### La syntaxe [slug].astro
+
+En nommant un fichier avec des crochets `[slug].astro`, vous indiquez à Astro que ce fichier est un **template dynamique**. Le mot entre crochets (`slug` dans notre cas) devient un **paramètre** qui sera extrait de l'URL.
+
+**Exemple d'URLs générées :**
+
+```
+/agenda/event/abc123 → params.slug = "abc123"
+/agenda/event/xyz789 → params.slug = "xyz789"
+```
+
+Dans notre cas, nous utilisons l'**ID de l'événement** comme slug, ce qui nous permet de récupérer facilement les données correspondantes depuis PocketBase.
+
+## Mode static et getStaticPaths()
+
+### Le mode static d'Astro
+
+Astro fonctionne par défaut en **mode static** (SSG - Static Site Generation). Cela signifie que toutes les pages HTML sont **générées au moment du build**, et non à chaque requête du navigateur.
+
+**Avantages du mode static :**
+
+- **Performance maximale** : les pages sont déjà prêtes, pas de calcul côté serveur
+- **Hébergement simple** : n'importe quel serveur web peut servir des fichiers HTML statiques
+- **Référencement optimal** : le contenu est immédiatement disponible pour les moteurs de recherche
+
+### La fonction getStaticPaths()
+
+Pour générer des pages statiques à partir de données dynamiques, Astro a besoin de savoir **quelles pages créer**. C'est le rôle de la fonction `getStaticPaths()`.
+
+Cette fonction doit :
+
+1. Récupérer la liste complète des éléments (tous les événements)
+2. Retourner un tableau d'objets contenant :
+   - `params` : les paramètres de l'URL (ici le `slug`)
+   - `props` : les données à transmettre au template
+
+```js
+export async function getStaticPaths() {
+  const events = await getCollection("event");
+
+  return events.map((event) => ({
+    params: { slug: event.id },  // Le slug sera l'ID de l'événement
+    props: { event },            // Les données complètes de l'événement
+  }));
+}
+```
+
+**Au moment du build**, Astro va :
+
+1. Exécuter `getStaticPaths()`
+2. Récupérer tous les événements de PocketBase
+3. Générer un fichier HTML pour chaque événement
+4. Chaque page sera accessible via `/agenda/event/[ID-de-l-événement]`
+
+## Création du template d'événement
+
+### Structure du fichier
+
+Créez le fichier suivant : `src/pages/agenda/event/[slug].astro`
+
+```astro title="src/pages/agenda/event/[slug].astro"
+---
+import ImagePB from "../../../components/ImagePB.astro";
+import Layout from "../../../layouts/Layout.astro";
+import Patterns from "../../../components/AnimatedPatterns.astro";
+import { formatDate } from "../../../js/helpers";
+
+import { getCollection } from "../../../js/backend.mjs";
+
+export async function getStaticPaths() {
+  const events = await getCollection("event");
+
+  return events.map((event) => ({
+    params: { slug: event.id },
+    props: { event },
+  }));
+}
+
+const { event } = Astro.props;
+
+if (!event) {
+  return Astro.redirect("/404");
+}
+
+const title = event.title;
+const description = event.excerpt;
+---
+
+<Layout title={title} description={description}>
+  <div class="grille relative lg:pt-28">
+    <ImagePB
+      record={event}
+      field="imgFile"
+      alt={event.imgAlt}
+      classPicture="duotone lg:col-span-5 -ml-6 -mr-6 lg:mx-0"
+    />
+    <header class="lg:col-span-6 lg:col-start-7">
+      <h1 class="my-12">{event.title}</h1>
+      <ul
+        class="divide-y divide-gray-300 *:grid *:grid-cols-4 *:items-center *:py-4"
+      >
+        <li>
+          <span class="col-span-1 text-sm font-bold uppercase">Date</span>
+          <span class="col-span-3">{formatDate(event.date)}</span>
+        </li>
+        <li>
+          <span class="col-span-1 text-sm font-bold uppercase">Lieux</span>
+          <span class="col-span-3">{event.lieu}</span>
+        </li>
+        <li>
+          <span class="col-span-1 text-sm font-bold uppercase">Catégorie</span>
+          <span class="col-span-3">{event.category}</span>
+        </li>
+      </ul>
+    </header>
+  </div>
+  <p
+    class="my-12 px-6 text-2xl leading-normal lg:mx-auto lg:max-w-4xl lg:text-3xl lg:leading-relaxed"
+  >
+    {event.excerpt}
+  </p>
+  <div
+    class="my-12 space-y-3 px-6 lg:mx-auto lg:max-w-2xl"
+    set:html={event.description}
+  />
+  <div
+    class="absolute inset-0 z-[-1] flex items-center justify-end overflow-hidden stroke-pink stroke-[24px] opacity-40"
+  >
+    <Patterns class="-mr-[5vw] -ml-60 lg:ml-auto" />
+  </div>
+</Layout>
+```
+
+### Explications du code
+
+#### 1. Fonction getStaticPaths()
+
+```js
+export async function getStaticPaths() {
+  const events = await getCollection("event");
+
+  return events.map((event) => ({
+    params: { slug: event.id },
+    props: { event },
+  }));
+}
+```
+
+- `getCollection("event")` récupère **tous** les événements (pas de limite)
+- Pour chaque événement, on retourne :
+  - `params.slug` : l'ID qui sera dans l'URL
+  - `props.event` : les données complètes accessibles via `Astro.props`
+
+#### 2. Récupération des données
+
+```js
+const { event } = Astro.props;
+
+if (!event) {
+  return Astro.redirect("/404");
+}
+```
+
+- `Astro.props` contient les données passées via `props` dans `getStaticPaths()`
+- La vérification `if (!event)` est une sécurité (normalement toujours présent)
+
+#### 3. Affichage des métadonnées
+
+```js
+const title = event.title;
+const description = event.excerpt;
+```
+
+Ces variables sont passées au composant `Layout` pour le SEO (balises `<title>`, `<meta>`).
+
+#### 4. Structure HTML
+
+Le template affiche :
+
+- Une image avec le composant `ImagePB`
+- Un en-tête avec le titre et les informations (date, lieu, catégorie)
+- L'excerpt en grand format
+- La description complète avec `set:html` (pour le contenu HTML riche)
+- Les patterns animés en arrière-plan
+
+## Personnalisation du contenu Rich Editor
+
+### Le problème du contenu non stylisé
+
+PocketBase propose un **Rich Editor** (TinyMCE) qui permet de créer du contenu enrichi avec des titres, des listes, des images, etc. Cependant, lorsque ce contenu HTML est injecté dans votre page avec `set:html`, il arrive **sans styles** appliqués.
+
+Par exemple, un paragraphe (`<p>`) n'aura pas d'espacement, une liste (`<ul>`) n'aura pas de puces, etc. C'est pourquoi nous devons créer une classe CSS spécifique pour styliser ces éléments.
+
+### Ajout de la classe rich-editor
+
+Dans le template `[slug].astro`, modifiez la section de description pour ajouter la classe `rich-editor` :
+
+```astro title="src/pages/agenda/event/[slug].astro" ins='rich-editor'
+<div
+  class="rich-editor my-12 space-y-3 px-6 lg:mx-auto lg:max-w-2xl"
+  set:html={event.description}
+/>
+```
+
+La classe `rich-editor` va nous permettre de cibler tous les éléments HTML à l'intérieur de cette `<div>` pour les styliser correctement.
+
+### Création des styles CSS
+
+Dans votre fichier `src/styles/global.css`, ajoutez les styles suivants dans la section `@layer components` :
+
+```css title="src/styles/global.css"
+@layer components {
+  /* ... autres styles ... */
+
+  .rich-editor {
+    p {
+      @apply mb-4;
+    }
+    h2,
+    h3,
+    h4 {
+      @apply mb-4;
+    }
+    h2:not(:first-child),
+    h3:not(:first-child),
+    h4:not(:first-child) {
+      @apply mt-8;
+    }
+    ul {
+      @apply my-4 list-disc pl-5;
+    }
+    ol {
+      @apply my-4 list-decimal pl-5;
+    }
+    figure,
+    p:has(img) {
+      @apply lg:-mx-50;
+    }
+    figcaption {
+      @apply mt-2 text-sm text-gray-500;
+    }
+  }
+}
+```
+
+### Pourquoi @layer components ?
+
+L'utilisation de `@layer components` dans Tailwind CSS permet de :
+
+1. **Organiser le CSS** : séparer les composants personnalisés des utilitaires
+2. **Contrôler la priorité** : s'assurer que ces styles peuvent être surchargés par des classes utilitaires si nécessaire
+3. **Maintenir la cohérence** : regrouper tous les styles de composants au même endroit
+
+### Résultat
+
+Avec ces styles appliqués, le contenu provenant du Rich Editor de PocketBase sera correctement formaté avec :
+
+- Des espacements cohérents
+- Des listes avec puces/numéros
+- Des titres bien hiérarchisés
+- Des images qui tirent parti de l'espace disponible
+
+## Ajout des liens dans le composant Card
+
+Pour permettre la navigation vers les pages d'événements, nous devons ajouter des liens dans le composant `Card`.
+
+### Code mis à jour
+
+```astro title="src/components/Card.astro" ins='{&#96;/agenda/event/${event.id}&#96;}'
+---
+import { formatDate } from "../js/helpers";
+import ImagePB from "./ImagePB.astro";
+const event = Astro.props;
+---
+
+<article
+  class="group col-span-4 grid grid-cols-[24px_1fr] grid-rows-[200px_48px_1fr] lg:grid-cols-[2fr_11fr]"
+>
+  <ImagePB
+    record={event}
+    field="imgFile"
+    alt={event.imgAlt}
+    classPicture="duotone col-start-1 row-start-1 col-span-2 row-span-2 group-hover:before:bg-black"
+    classImg="group-hover:grayscale-0 group-hover:mix-blend-normal"
+  />
+  <h3
+    class="z-1 col-start-2 row-start-1 my-6 mr-4 self-end font-mono text-3xl text-white"
+  >
+    <a href={`/agenda/event/${event.id}`}>{event.title}</a>
+  </h3>
+  <div
+    class="z-2 col-span-1 col-start-2 row-span-2 row-start-2 space-y-4 bg-white p-6"
+  >
+    <p class="uppercase">{formatDate(event.date)}</p>
+    <p>{event.excerpt}</p>
+    <a
+      class="inline-block border-b-2 border-black uppercase"
+      href={`/agenda/event/${event.id}`}>Plus d'info</a
+    >
+  </div>
+</article>
+```
+
+## Vérification
+
+### 1. Build du site
+
+Pour générer les pages statiques, lancez la commande de build :
+
+```bash
+npm run build
+```
+
+Astro va :
+
+1. Exécuter `getStaticPaths()` dans `[slug].astro`
+2. Récupérer tous les événements de PocketBase
+3. Générer un fichier HTML pour chaque événement dans `dist/agenda/event/`
+
+
+Accédez à la page d'accueil et cliquez sur une carte d'événement pour voir le template en action.
+
+## Récapitulatif
+
+### Ce que nous avons appris
+
+1. **Routes dynamiques** : la syntaxe `[slug].astro` permet de créer un modèle de page réutilisable
+2. **Mode static** : Astro génère toutes les pages HTML au moment du build pour des performances optimales
+3. **getStaticPaths()** : cette fonction indique à Astro quelles pages générer en mode static
+4. **Navigation** : ajout de liens dans les composants pour créer une navigation fluide entre les pages
+
+### Avantages de cette approche
+
+- **Performance** : les pages sont pré-générées, temps de chargement minimal
+- **SEO** : chaque événement a sa propre URL et son contenu est indexable
+- **Maintenance** : un seul template pour tous les événements
+- **Scalabilité** : ajouter de nouveaux événements ne nécessite aucun code supplémentaire
+
+:::tip[Mode SSR vs Static]
+Dans ce projet, nous utilisons le **mode static** car le site est un site vitrine avec du contenu qui ne change pas à chaque seconde. Pour un site nécessitant des données en temps réel, vous pourriez utiliser le **mode SSR** (Server-Side Rendering) qui génère les pages à la demande.
+:::
+
+## Prochaines étapes
+
+Dans le prochain chapitre, nous verrons comment créer une page listant tous les événements à venir, en utilisant la fonction `getUpcomingEvents()`.

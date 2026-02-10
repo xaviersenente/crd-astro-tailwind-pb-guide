@@ -1,0 +1,314 @@
+---
+title: Section Découverte avec statistiques
+description: Construction d'une section avec image, texte d'introduction et chiffres clés
+---
+
+import { LinkCard, CardGrid } from "@astrojs/starlight/components";
+import { Image } from 'astro:assets';
+
+import sectionDecouverte from "../../../assets/sectionconservatoire-grid.webp";
+
+:::note[Branche Git]
+**Branche :** [14.-Section-decouverte](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/14.-Section-decouverte)  
+**N° :** 14
+:::
+
+Après le Hero, la première section présente le conservatoire avec une grande image, un texte d'accroche et des statistiques clés. Cette section utilise un layout CSS Grid complexe pour créer une composition asymétrique.
+
+<Image src={sectionDecouverte} alt="Section conservatoire" />
+
+## Étape 1 : Structure de base de la section
+
+Ajoutez une section après le Hero dans `src/pages/index.astro` :
+
+```astro wrap title="src/pages/index.astro" ins={6-8}
+<Layout title={title} description={description}>
+  <Hero title={title} subTitle={subTitle}>
+    <!-- Contenu du Hero -->
+  </Hero>
+  
+  <section class="grille my-24">
+    <!-- Contenu à venir -->
+  </section>
+</Layout>
+```
+
+**Classes de base** :
+- `grille` : Classe personnalisée définie dans `global.css` (grille 12 colonnes)
+- `my-24` : Marge verticale de 96px (espacement entre sections)
+
+## Étape 2 : Import et ajout de l'image principale
+
+Importez l'image, l'icône points SVG et créez un tableau de statistiques :
+
+```astro wrap title="src/pages/index.astro" ins={13, 22-30} collapse={2-10, 14-18} ins='space-y-8 lg:mt-48 lg:space-y-0 lg:before:col-span-7 lg:before:col-start-1 lg:before:row-span-1 lg:before:row-start-2 lg:before:-mr-10 lg:before:-mb-10 lg:before:bg-pink'
+---
+import { Picture } from "astro:assets";
+
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
+import AnimatedPatterns from "../components/AnimatedPatterns.astro";
+
+import IconMusique from "../assets/icones/icon_musique.svg";
+import IconTheatre from "../assets/icones/icon_theatre.svg";
+import IconDanse from "../assets/icones/icon_danse.svg";
+import imgHero from "../assets/img/musique-01.jpg";
+import imgCrdInt from "../assets/img/conservatoire-interieur-05.jpg";
+import points from "../assets/icones/points.svg";
+
+const title = "Conservatoire Henri Dutilleux";
+const subTitle = "Conservatoire à Rayonnement Départemental du Grand Belfort";
+const description =
+  "Le Conservatoire Henri Dutilleux de Belfort vous accueille pour découvrir la musique, la danse et le théâtre.";
+---
+
+<section class="grille my-24 space-y-8 lg:mt-48 lg:space-y-0 lg:before:col-span-7 lg:before:col-start-1 lg:before:row-span-1 lg:before:row-start-2 lg:before:-mr-10 lg:before:-mb-10 lg:before:bg-pink">
+  <Picture
+    src={imgCrdInt}
+    alt="Salle de musique du conservatoire"
+    layout="full-width"
+    class="h-full object-cover"
+    pictureAttributes={{
+      class: "max-h-[1100px] lg:col-span-7 lg:col-start-1 lg:row-span-2 lg:row-start-1 xl:ml-[calc((1296px-100vw)/2)]",
+    }}
+  />
+</section>
+```
+
+**Classes ajoutées à la section** :
+- `space-y-8` : Espacement vertical de 32px entre enfants (mobile)
+- `lg:mt-48` : Marge top de 192px sur desktop
+- `lg:space-y-0` : Supprime l'espacement vertical sur desktop (géré par grid)
+
+**Pseudo-élément décoratif (`before:`)** :
+- `lg:before:col-span-7` : Occupe 7 colonnes
+- `lg:before:col-start-1` : Démarre à la colonne 1
+- `lg:before:row-span-1` : Occupe 1 ligne
+- `lg:before:row-start-2` : Ligne 2 (bas)
+- `lg:before:-mr-10` : Marge négative droite de 40px (débord)
+- `lg:before:-mb-10` : Marge négative bas de 40px (débord)
+- `lg:before:bg-pink` : Fond rose
+
+**Comportement de l'image (à l'intérieur de `Picture`)** :
+- `h-full object-cover` : Hauteur 100% et couverture de l'espace
+
+**Positionnement de `Picture` sur la grille desktop** :
+- `max-h-[1100px]` : Hauteur maximale de 1100px
+- `lg:col-span-7` : Occupe 7 colonnes (sur 12)
+- `lg:col-start-1` : Démarre à la colonne 1
+- `lg:row-span-2` : S'étend sur les 2 lignes
+- `lg:row-start-1` : Démarre à la ligne 1
+- `xl:ml-[calc((1296px-100vw)/2)]` : Décalage pour alignement max-width
+
+:::note[Layout asymétrique avec pseudo-élément]
+La grille crée un layout asymétrique : l'image occupe 7 colonnes sur toute la hauteur, avec un pseudo-élément rose décoratif qui déborde en bas à droite, créant un effet de superposition visuelle.
+:::
+
+## Étape 3 : Ajout du header avec texte et bouton
+
+Ajoutez un header avec le texte d'accroche, un motif décoratif et un bouton :
+
+```astro wrap title="src/pages/index.astro" ins={7, 21-30} collapse={2-5, 10-19}
+---
+import { Picture } from "astro:assets";
+
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
+import AnimatedPatterns from "../components/AnimatedPatterns.astro";
+import Button from "../components/Button.astro";
+---
+
+<section class="grille my-24 space-y-8 lg:mt-48 lg:space-y-0 lg:before:col-span-7 lg:before:col-start-1 lg:before:row-span-1 lg:before:row-start-2 lg:before:-mr-10 lg:before:-mb-10 lg:before:bg-pink">
+  <Picture
+    src={imgCrdInt}
+    alt="Salle de musique du conservatoire"
+    layout="full-width"
+    class="h-full object-cover"
+    pictureAttributes={{
+      class: "max-h-[1100px] lg:col-span-7 lg:col-start-1 lg:row-span-2 lg:row-start-1 xl:ml-[calc((1296px-100vw)/2)]",
+    }}
+  />
+  
+  <header
+    class="space-y-8 bg-white lg:col-span-8 lg:col-start-5 lg:row-span-1 lg:row-start-1 lg:bg-(image:--bg-points) lg:bg-position-[right_100px_center] lg:bg-no-repeat lg:p-28 lg:pr-40"
+    style={`--bg-points: url(${points.src})`}
+  >
+    <h2 class="mt-10 text-2xl leading-normal lg:text-3xl xl:text-4xl">
+      Découvrez le Conservatoire, ses enseignements, ses équipes dans un
+      nouveau lieu dédié à la culture artistique.
+    </h2>
+    <Button href="#" text="Plus d'info" />
+  </header>
+</section>
+```
+
+**Positionnement du header sur la grille desktop** :
+- `lg:col-span-8` : Occupe 8 colonnes (au lieu de 7)
+- `lg:col-start-5` : Démarre à la colonne 5 (se superpose à l'image sur colonnes 5-7)
+- `lg:row-span-1` : Occupe 1 ligne
+- `lg:row-start-1` : Ligne 1 (haut)
+
+**Background décoratif avec SVG** :
+- `lg:bg-(image:--bg-points)` : Utilise la variable CSS `--bg-points` comme image de fond
+- `lg:bg-position-[right_100px_center]` : Positionne l'image à 100px du bord droit, centrée verticalement
+- `lg:bg-no-repeat` : L'image ne se répète pas
+- `style={--bg-points: url(${points.src})}` : Définit la variable CSS avec l'URL du SVG importé
+
+**Padding et espacement** :
+- `lg:p-28` : Padding de 112px
+- `lg:pr-40` : Padding droit de 160px (pour laisser de l'espace au motif points)
+- `space-y-8` : Espacement de 32px entre titre et bouton
+
+**Styles du titre** :
+- `mt-10` : Marge top de 40px
+- `text-2xl` : Taille 24px (mobile)
+- `lg:text-3xl` : Taille 30px (desktop)
+- `xl:text-4xl` : Taille 36px (extra large)
+- `leading-normal` : Interlignage normal (1.5)
+
+:::tip[Variables CSS dans Astro]
+L'utilisation de `style={--bg-points: url(${points.src})}` permet d'injecter dynamiquement l'URL du SVG importé dans une variable CSS, qui est ensuite utilisée par Tailwind avec la syntaxe `bg-(image:--bg-points)`. Cette technique combine le meilleur des deux mondes : gestion d'assets par Astro et styling par Tailwind.
+:::
+
+## Étape 4 : Ajout des statistiques avec itération
+
+Ajoutez une liste de statistiques en bas à droite en utilisant le tableau `stats` :
+
+```astro wrap title="src/pages/index.astro" ins={21-26} collapse={2-20, 28-49}
+---
+import { Picture } from "astro:assets";
+
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
+import AnimatedPatterns from "../components/AnimatedPatterns.astro";
+import Button from "../components/Button.astro";
+
+import IconMusique from "../assets/icones/icon_musique.svg";
+import IconTheatre from "../assets/icones/icon_theatre.svg";
+import IconDanse from "../assets/icones/icon_danse.svg";
+import imgHero from "../assets/img/musique-01.jpg";
+import imgCrdInt from "../assets/img/conservatoire-interieur-05.jpg";
+import points from "../assets/icones/points.svg";
+
+const title = "Conservatoire Henri Dutilleux";
+const subTitle = "Conservatoire à Rayonnement Départemental du Grand Belfort";
+const description =
+  "Le Conservatoire Henri Dutilleux de Belfort vous accueille pour découvrir la musique, la danse et le théâtre.";
+
+const stats = [
+  { number: 9, label: "sites" },
+  { number: 84, label: "enseignants" },
+  { number: 1500, label: "élèves" },
+  { number: 50, label: "disciplines" },
+];
+---
+
+<section class="grille my-24 space-y-8 lg:mt-48 lg:space-y-0 lg:before:col-span-7 lg:before:col-start-1 lg:before:row-span-1 lg:before:row-start-2 lg:before:-mr-10 lg:before:-mb-10 lg:before:bg-pink">
+  <Picture
+    src={imgCrdInt}
+    alt="Salle de musique du conservatoire"
+    layout="full-width"
+    class="h-full object-cover"
+    pictureAttributes={{
+      class: "max-h-[1100px] lg:col-span-7 lg:col-start-1 lg:row-span-2 lg:row-start-1 xl:ml-[calc((1296px-100vw)/2)]",
+    }}
+  />
+  
+  <header
+    class="space-y-8 bg-white lg:col-span-8 lg:col-start-5 lg:row-span-1 lg:row-start-1 lg:bg-(image:--bg-points) lg:bg-position-[right_100px_center] lg:bg-no-repeat lg:p-28 lg:pr-40"
+    style={`--bg-points: url(${points.src})`}
+  >
+    <h2 class="mt-10 text-2xl leading-normal lg:text-3xl xl:text-4xl">
+      Découvrez le Conservatoire, ses enseignements, ses équipes dans un
+      nouveau lieu dédié à la culture artistique.
+    </h2>
+    <Button href="#" text="Plus d'info" />
+  </header>
+
+  <ul
+    class="grid grid-cols-2 gap-12 lg:col-span-4 lg:col-start-9 lg:row-start-2"
+  >
+    {
+      stats.map(({ number, label }) => (
+        <li>
+          <span class="block text-4xl text-pink lg:mb-12 lg:text-6xl">
+            {number}
+          </span>
+          <span>{label}</span>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+```
+**Tableau stats** :
+Le tableau `stats` centralise les données des statistiques, facilitant leur maintenance et leur itération avec `.map()`.
+
+**Itération avec `.map()`** :
+Au lieu de répéter manuellement chaque `<li>`, on utilise `stats.map()` pour générer dynamiquement les éléments :
+- `({ number, label })` : Déstructuration de chaque objet du tableau
+- Le code JSX entre parenthèses est retourné pour chaque itération
+- Plus maintenable : ajouter une stat = ajouter une ligne au tableau
+
+**Positionnement de la liste de stats sur la grille desktop** :
+- `lg:col-span-4` : Occupe 4 colonnes (9-12)
+- `lg:col-start-9` : Démarre à la colonne 9
+- `lg:row-start-2` : Ligne 2 (bas)
+
+**Grille interne des stats** :
+- `grid grid-cols-2` : Grille de 2 colonnes pour les 4 items
+- `gap-12` : Espacement de 48px entre les items
+
+**Styles des chiffres** :
+- `block` : Affichage bloc (sur sa propre ligne)
+- `text-4xl` : Taille 36px (mobile)
+- `lg:text-6xl` : Taille 60px (desktop)
+- `text-pink` : Couleur rose définie dans le Design System
+- `lg:mb-12` : Marge bottom de 48px sur desktop (espace entre chiffre et label)
+
+
+## Code final de la section
+
+```astro wrap title="src/pages/index.astro"
+<section
+  class="grille my-24 space-y-8 lg:mt-48 lg:space-y-0 lg:before:col-span-7 lg:before:col-start-1 lg:before:row-span-1 lg:before:row-start-2 lg:before:-mr-10 lg:before:-mb-10 lg:before:bg-pink"
+>
+  <Picture
+    src={imgCrdInt}
+    alt="Salle de musique du conservatoire"
+    layout="full-width"
+    class="h-full object-cover"
+    pictureAttributes={{
+      class:
+        "max-h-[1100px] lg:col-span-7 lg:col-start-1 lg:row-span-2 lg:row-start-1 xl:ml-[calc((1296px-100vw)/2)]",
+    }}
+  />
+  <header
+    class="space-y-8 bg-white lg:col-span-8 lg:col-start-5 lg:row-span-1 lg:row-start-1 lg:bg-(image:--bg-points) lg:bg-position-[right_100px_center] lg:bg-no-repeat lg:p-28 lg:pr-40"
+    style={`--bg-points: url(${points.src})`}
+  >
+    <h2 class="mt-10 text-2xl leading-normal lg:text-3xl xl:text-4xl">
+      Découvrez le Conservatoire, ses enseignements, ses équipes dans un
+      nouveau lieu dédié à la culture artistique.
+    </h2>
+    <Button href="#" text="Plus d'info" />
+  </header>
+
+  <ul
+    class="grid grid-cols-2 gap-12 lg:col-span-4 lg:col-start-9 lg:row-start-2"
+  >
+    {
+      stats.map(({ number, label }) => (
+        <li>
+          <span class="block text-4xl text-pink lg:mb-12 lg:text-6xl">
+            {number}
+          </span>
+          <span>{label}</span>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+```
+
+Cette section démontre la puissance de CSS Grid pour créer des layouts sophistiqués et asymétriques avec des effets de superposition, tout en restant maintenable grâce à l'utilisation de tableaux de données et de l'itération `.map()`.

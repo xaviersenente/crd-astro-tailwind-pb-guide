@@ -1,0 +1,154 @@
+---
+title: Installation et config
+description: Installer et configurer PocketBase localement
+---
+
+import { FileTree, Steps, Icon } from "@astrojs/starlight/components";
+import { Image } from "astro:assets";
+import pocketbase01 from "../../../assets/pocketbase-01.avif";
+import pocketbase02 from "../../../assets/pocketbase-02.avif";
+import pocketbase03 from "../../../assets/pocketbase-03.avif";
+import pocketbase04 from "../../../assets/pocketbase-04.avif";
+import pocketbase05 from "../../../assets/pocketbase-05.avif";
+
+:::note[Branche Git]
+**Branche :** [17.-Installation-Pocketbase](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/17.-Installation-Pocketbase)  
+**N° :** 17
+:::
+
+## Installation de PocketBase
+
+### Téléchargement
+
+1. Créer un répertoire nommé `pocketbase` à la racine du projet.
+2. [Télécharger Pocketbase](https://pocketbase.io/docs/) et déplacer l'application dans le répertoire `pocketbase`.
+
+:::tip[Documentation PocketBase]
+[PocketBase - Backend Open Source en un seul fichier](https://pocketbase.io/docs/)  
+Backend Open Source en un seul fichier avec base de données temps réel, authentification, stockage de fichiers et tableau de bord d'administration
+:::
+
+Démarrez Pocketbase avec les commandes suivantes :
+
+```bash
+# Aller dans le dossier pocketbase
+cd pocketbase
+
+# Lancez PocketBase
+./pocketbase serve
+```
+
+## Configuration initiale
+
+### Créer un compte admin
+
+1. Ouvrir [`http://127.0.0.1:8090/\_/`](http://127.0.0.1:8090/_/)
+2. Créer un compte administrateur (e-mail et mot de passe)
+3. Configurer les paramètres de base
+
+:::caution[Répertoires automatiques]
+L'exécutable PocketBase créera automatiquement 2 nouveaux répertoires :
+
+- **pb_data** - stocke les données de votre application, les fichiers téléchargés, etc. (doivent généralement être ajoutés dans .gitignore)
+- **pb_migrations** - contient les fichiers de migration JS avec les modifications de votre collection (peuvent être validés en toute sécurité dans votre référentiel)
+
+Vous pouvez trouver toutes les commandes disponibles en exécutant `./pocketbase --help` ou `./pocketbase [command] --help`
+:::
+
+### Structure du répertoire Pocketbase
+
+<FileTree>
+
+- project/
+  - pocketbase/
+    - pocketbase #Binaire exécutable
+    - pb_data/ #Base de données et fichiers
+      - data.db #SQLite database
+      - storage/ #Fichiers uploadés
+      - logs.db #Logs
+    - pb_migrations/ #Fichiers de migration JS
+
+</FileTree>
+
+Rendez-vous à l’url indiquée pour l’API ([http://127.0.0.1:8090/\_/](http://127.0.0.1:8090/_/)).
+
+### Fichier .gitignore pour pocketbase
+
+:::tip[Pourquoi ignorer ces fichiers ?]
+Les fichiers de données PocketBase (`pb_data/`), l'exécutable et les fichiers temporaires ne doivent pas être versionnés car ils contiennent des données locales, des fichiers uploadés et varient selon l'environnement. Seuls les fichiers de migration (`pb_migrations/`) doivent être versionnés pour partager la structure de la base de données entre développeurs.
+:::
+
+Ajoutez les lignes suivantes à la fin du fichier `.gitignore` du projet :
+
+```gitignore title=".gitignore"
+# PocketBase
+pocketbase/pb_data/*
+!pocketbase/pb_data/types.d.ts
+pocketbase/pocketbase
+pocketbase/pocketbase.exe
+pocketbase/pb_data.zip
+pocketbase/CHANGELOG.md
+pocketbase/LICENSE.md
+pocketbase/pb_public
+```
+
+### Variables d'environnement
+
+:::tip[Pourquoi utiliser les variables d'environnement ?]
+Les variables d'environnement permettent de séparer la configuration selon l'environnement (développement, production). Cela évite de coder en dur les URL et facilite le déploiement. Le préfixe `PUBLIC_` rend la variable accessible côté client dans Astro [voir documentation](https://docs.astro.build/fr/guides/environment-variables/).
+:::
+
+Créer `.env` à la racine du projet Astro :
+
+```env title=".env"
+PUBLIC_POCKETBASE_URL=http://127.0.0.1:8090
+```
+
+## Scripts de développement
+
+Pour faciliter le développement, nous allons configurer des scripts qui permettent de démarrer Astro et PocketBase simultanément.
+
+<Steps>
+
+1. Installer concurrently
+   Installer le package `concurrently` qui permet d'exécuter plusieurs commandes en parallèle :
+
+   ```bash
+   npm install -D concurrently
+   ```
+
+   :::note[Qu'est-ce que concurrently ?]
+   `concurrently` est un outil qui permet de lancer plusieurs processus en parallèle dans un seul terminal. Parfait pour démarrer le serveur Astro et PocketBase en même temps.
+   :::
+
+2. Configurer les scripts
+   Ajouter les scripts suivants dans `package.json` :
+
+   ```json ins={8-9}
+   {
+     "scripts": {
+       "dev": "astro dev",
+       "start": "astro dev",
+       "build": "astro build",
+       "preview": "astro preview",
+       "astro": "astro",
+       "pb:serve": "cd pocketbase && ./pocketbase serve",
+       "dev:all": "concurrently \"npm run dev\" \"npm run pb:serve\""
+     }
+   }
+   ```
+
+   **Explication des scripts :**
+   - `pb:serve` : Lance uniquement le serveur PocketBase
+   - `dev:all` : Lance à la fois Astro et PocketBase en parallèle
+
+3. Démarrer l'environnement de développement
+   Pour démarrer les deux serveurs en une seule commande :
+
+   ```bash
+   npm run dev:all
+   ```
+
+</Steps>
+
+Vous verrez les logs des deux serveurs s'afficher dans le même terminal. Astro sera accessible sur `http://localhost:4321` et PocketBase sur `http://127.0.0.1:8090`.

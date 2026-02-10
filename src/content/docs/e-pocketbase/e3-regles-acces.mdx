@@ -1,0 +1,95 @@
+---
+title: Règles d'accès
+description: Configurer les permissions et la sécurité
+---
+
+import { Image } from "astro:assets";
+import { LinkCard } from "@astrojs/starlight/components";
+
+import apirulesEvent from "../../../assets/apirules-event.webp";
+import apirulesPage from "../../../assets/apirules-page.webp";
+
+
+## Les règles API
+
+Les règles API sont les contrôles d'accès et les filtres de données de votre collection. Elles déterminent qui peut effectuer quelles actions sur vos données.
+
+<LinkCard
+  title="Introduction - API rules and filters"
+  href="https://pocketbase.io/docs/api-rules-and-filters/"
+/>
+
+### Les 5 règles disponibles
+
+Chaque collection dispose de 5 règles, correspondant à une action API spécifique :
+
+- **listRule** : Récupérer la liste des enregistrements
+- **viewRule** : Consulter un enregistrement précis
+- **createRule** : Créer un nouvel enregistrement
+- **updateRule** : Modifier un enregistrement existant
+- **deleteRule** : Supprimer un enregistrement
+
+
+## Configuration des règles
+
+### Étape 1 : Accéder aux règles
+
+1. Aller dans **Collections**
+2. Sélectionner une collection
+3. Cliquer sur **API Rules**
+4. Configurer chaque type de règle
+
+### Étape 2 : Rendre accessible la règle list/search
+
+Pour permettre à tous de récupérer les données, configurez la règle **List/Search** avec une chaîne vide ou une expression de filtre.
+
+## Collection `event` et `page`
+
+Configuration recommandée pour les évènements publics :
+
+<Image src={apirulesEvent} alt="API Rules"/>
+
+| Règle      | Condition                |
+| ---------- | ------------------------ |
+| **List**   | `published = true`   |
+| **View**   | `published = true`   |
+| **Create** | Verrouillé |
+| **Update** | Verrouillé |
+| **Delete** | Verrouillé |
+
+**Explication :**
+
+- **List/View** : Seuls les évènements publiés sont visibles publiquement
+- **Create/Update/Delete** : Accessible par un administrateur uniquement
+
+
+## Tester les règles d'accès
+
+### Vérifier l'accès aux données
+
+Tester l'URL API dans le navigateur :
+
+```
+http://127.0.0.1:8090/api/collections/event/records
+http://127.0.0.1:8090/api/collections/page/records
+```
+
+### Tester avec curl
+
+```bash
+# Récupérer les évènements
+curl http://127.0.0.1:8090/api/collections/event/records
+
+# Récupérer une page spécifique
+curl http://127.0.0.1:8090/api/collections/page/records/RECORD_ID
+```
+
+### Tester les filtres
+
+```bash
+# Évènements publiés uniquement
+curl "http://127.0.0.1:8090/api/collections/event/records?filter=status='published'"
+
+# Évènements futurs
+curl "http://127.0.0.1:8090/api/collections/event/records?filter=date>='@now'"
+```

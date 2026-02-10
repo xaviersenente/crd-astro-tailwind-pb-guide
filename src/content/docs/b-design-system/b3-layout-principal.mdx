@@ -1,0 +1,288 @@
+---
+title: Layout principal
+description: Structure de base avec header, main et footer
+---
+
+import { LinkCard } from "@astrojs/starlight/components";
+
+:::note[Branche Git]
+**Branche :** [6.-Layout-principal](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/6.-Layout-principal)  
+**N° :** 6
+:::
+
+Le Layout est le composant fondamental qui enveloppe toutes les pages du site. Il définit la structure HTML commune et importe les ressources partagées (CSS, polices, composants).
+
+Voici l'état de notre `Layout` pour l'instant :
+
+```astro wrap title="src/layouts/Layout.astro"
+---
+import "../styles/global.css";
+import "@fontsource-variable/mulish";
+import "@fontsource/space-mono";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Astro Basics</title>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+```
+
+## Étape 1 : Props et title
+
+### Ajout des props et gestion du titre
+
+Ajoutons la logique pour gérer dynamiquement le titre et la description :
+
+```astro wrap title="src/layouts/Layout.astro" ins={6-8, 20-21} del={19, 28-35}
+---
+import "../styles/global.css";
+import "@fontsource-variable/mulish";
+import "@fontsource/space-mono";
+
+const { title, description } = Astro.props;
+const siteName = "Conservatoire Henri Dutilleux";
+const titleHead = Astro.url.pathname === "/" ? siteName : `${title} — ${siteName}`;
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Astro Basics</title>
+    <title>{titleHead}</title>
+    <meta name="description" content={description} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+
+<style>
+  html,
+  body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+```
+
+### Les props avec Astro
+
+`Astro.props` permet de récupérer les propriétés passées au composant depuis une page parente. C'est le mécanisme qui permet de rendre les composants dynamiques et réutilisables.
+
+<LinkCard
+  title="Les props de composant dans Astro"
+  href="https://docs.astro.build/fr/basics/astro-components/#props-de-composant"
+/>
+
+Dans notre Layout, nous récupérons deux props :
+
+```js
+const { title, description } = Astro.props;
+```
+
+- **`title`** : Le titre spécifique de chaque page
+- **`description`** : La description pour les métadonnées SEO
+
+Ces props sont ensuite utilisées pour personnaliser le contenu de la balise `<head>`.
+
+:::tip[Utilisation dans une page]
+Pour passer des props au Layout depuis une page :
+
+```astro
+<Layout title="Agenda" description="Consultez tous nos événements">
+  <!-- Contenu de la page -->
+</Layout>
+```
+
+Les valeurs `title` et `description` seront automatiquement récupérées dans `Astro.props`.
+:::
+
+### Gestion dynamique du titre
+
+Le titre de la page est construit dynamiquement selon le contexte de navigation en utilisant `Astro.url.pathname` :
+
+```js
+const siteName = "Conservatoire Henri Dutilleux";
+
+const titleHead = Astro.url.pathname === "/" ? siteName : `${title} — ${siteName}`;
+```
+
+**Logique appliquée** :
+- **Page d'accueil** (`/`) : Affiche uniquement le nom du site → `"Conservatoire Henri Dutilleux"`
+- **Autres pages** : Combine le titre de la page avec le nom du site → `"Agenda — Conservatoire Henri Dutilleux"`
+
+Cette approche améliore le SEO en créant des titres uniques et descriptifs pour chaque page tout en conservant la marque du site.
+
+**`Astro.url.pathname`** retourne le chemin actuel de l'URL (ex: `/`, `/agenda`, `/contact`), ce qui permet d'adapter le comportement selon la page visitée.
+
+## Étape 2 : Ajout des favicons
+
+Une favicon professionnelle nécessite plusieurs formats pour couvrir tous les navigateurs et appareils :
+
+1. Aller sur [RealFaviconGenerator](https://realfavicongenerator.net/)
+2. Uploader votre logo (idéalement un fichier SVG ou PNG haute résolution)
+3. Configurer les options pour chaque plateforme :
+   - **Favicon classique** : Pour les navigateurs desktop
+   - **Apple Touch Icon** : Pour iOS et iPadOS
+   - **Android Chrome** : Pour les appareils Android
+   - **Windows tiles** : Pour Windows 10/11
+4. Télécharger le package généré
+5. Extraire les fichiers dans le dossier `/public`
+6. Copier les balises `<link>` fournies dans la section `<head>` du Layout
+
+Les fichiers générés incluent généralement :
+- `favicon.svg` ou `favicon.ico`
+- `apple-touch-icon.png` (180×180)
+- `site.webmanifest` (configuration pour Android)
+- Plusieurs tailles de PNG pour différents contextes
+
+Remplaçons les favicons par défaut par ceux générés avec [RealFaviconGenerator](https://realfavicongenerator.net/) :
+
+```astro wrap title="src/layouts/Layout.astro" ins={18-19}
+---
+import "../styles/global.css";
+import "@fontsource-variable/mulish";
+import "@fontsource/space-mono";
+
+const { title, description } = Astro.props;
+const siteName = "Conservatoire Henri Dutilleux";
+const titleHead = Astro.url.pathname === "/" ? siteName : `${title} — ${siteName}`;
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{titleHead}</title>
+    <meta name="description" content={description} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+```
+
+## Étape 3 : Import et ajout des composants Header et Footer
+
+Le Layout importe et utilise les composants `Header` et `Footer` qui seront présents sur toutes les pages. Ces composants doivent être créés dans le dossier `/src/components/`.
+
+### Création du Header
+
+Créer `src/components/Header.astro` :
+
+```astro wrap title="src/components/Header.astro"
+---
+// Navigation et logique du header
+---
+
+<header>
+  <!-- Structure de navigation -->
+</header>
+```
+
+Le Header contiendra typiquement :
+- Le logo et nom du site
+- Menu de navigation principale
+- Liens vers les pages clés
+
+### Création du Footer
+
+Créer `src/components/Footer.astro` avec les informations de bas de page :
+
+```astro wrap title="src/components/Footer.astro"
+---
+// Informations et logique du footer
+---
+
+<footer>
+  <!-- Coordonnées, liens secondaires, copyright -->
+</footer>
+```
+
+Le Footer inclut généralement :
+- Informations de contact
+- Liens secondaires
+- Copyright et mentions légales
+
+:::tip[Composants détaillés]
+Les composants `Header` et `Footer` seront développés en détail dans les sections suivantes du design system. Pour l'instant, créez des versions simples pour que le Layout fonctionne.
+:::
+
+### Import des composants dans le Layout
+
+```astro wrap title="src/layouts/Layout.astro" ins={6-7, 26-27, 29-30}
+---
+import "../styles/global.css";
+import "@fontsource-variable/mulish";
+import "@fontsource/space-mono";
+
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+
+const { title, description } = Astro.props;
+const siteName = "Conservatoire Henri Dutilleux";
+const titleHead = Astro.url.pathname === "/" ? siteName : `${title} — ${siteName}`;
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <title>{titleHead}</title>
+    <meta name="description" content={description} />
+  </head>
+  <body>
+    <Header />
+    <main>
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>
+```
+
+
+## Utilisation du Layout
+
+Une fois le Layout créé, il peut être utilisé dans n'importe quelle page :
+
+```astro wrap title="src/pages/index.astro"
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Accueil" description="Bienvenue au Conservatoire Henri Dutilleux">
+  <section>
+    <h1>Bienvenue</h1>
+    <p>Contenu de la page d'accueil...</p>
+  </section>
+</Layout>
+```
+
+Le contenu placé entre les balises `<Layout>` sera injecté à l'emplacement du `<slot />` dans le fichier Layout.astro.
