@@ -9,6 +9,15 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "Conservatoire",
+      logo: {
+        src: './src/assets/logo.svg',
+      },
+      locales: {
+        root: {
+          label: 'French',
+          lang: 'fr-FR',
+        },
+      },
       plugins: [starlightImageZoom()],
       expressiveCode: {
         plugins: [pluginCollapsibleSections()],
@@ -164,23 +173,21 @@ export default defineConfig({
               label: "Pages standard",
               slug: "f-pages-dynamiques/f6-pages-standard",
             },
+            {
+              label: "Pagination agenda",
+              slug: "f-pages-dynamiques/f7-pagination-agenda",
+            },
           ],
         },
         {
-          label: "Production",
+          label: "SEO",
           collapsed: false,
           items: [
             {
-              label: "Page d'accueil",
-              slug: "g-production/g1-page-accueil",
+              label: "URLs friendly",
+              slug: "g-seo/g1-url-friendly",
             },
-            { label: "SEO", slug: "g-production/g2-seo" },
-            { label: "Performance", slug: "g-production/g3-performance" },
-            { label: "Déploiement", slug: "g-production/g4-deploiement" },
-            {
-              label: "Checklist finale",
-              slug: "g-production/g5-checklist",
-            },
+            { label: "SEO", slug: "g-seo/g2-seo" },
           ],
         },
       ],

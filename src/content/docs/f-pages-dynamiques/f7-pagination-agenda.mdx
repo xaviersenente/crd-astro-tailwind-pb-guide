@@ -1,0 +1,262 @@
+---
+title: Pagination de l'agenda
+description: Mettre en place un système de pagination pour la page d'agenda avec paginate() d'Astro
+---
+
+:::note[Branche Git]
+**Branche :** [24.-Pagination-Agenda](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/24.-Pagination-Agenda)  
+**N° :** 24
+:::
+
+## Introduction
+
+Jusqu'ici, la page Agenda affiche **tous** les événements à venir en une seule fois. Cette approche fonctionne pour un petit nombre d'événements, mais devient problématique lorsque la liste s'allonge : le temps de chargement augmente, la page devient interminable et l'expérience utilisateur se dégrade.
+
+Dans ce chapitre, nous allons :
+
+- Découvrir la fonction `paginate()` intégrée à Astro
+- Transformer la page Agenda en route dynamique paginée
+- Créer un composant `Pagination` réutilisable
+- Afficher 3 événements par page avec navigation Précédent / Suivant
+
+:::tip[Documentation Astro]
+Ce chapitre s'appuie sur la fonctionnalité native de pagination d'Astro. Consultez la [documentation officielle sur la pagination](https://docs.astro.build/fr/guides/routing/#pagination) pour approfondir le sujet.
+:::
+
+## Principe de fonctionnement
+
+### La fonction `paginate()` d'Astro
+
+Astro propose une fonction `paginate()` qui s'utilise **à l'intérieur de `getStaticPaths()`**. Elle permet de découper automatiquement un tableau de données en pages et de générer les routes correspondantes.
+
+```js
+export async function getStaticPaths({ paginate }) {
+  const items = await fetchData();
+  return paginate(items, { pageSize: 3 });
+}
+```
+
+Lorsque vous appelez `paginate(items, { pageSize: 3 })`, Astro va :
+
+1. Découper le tableau `items` en groupes de 3 éléments
+2. Générer automatiquement les routes `/agenda/`, `/agenda/2/`, `/agenda/3/`, etc.
+3. Fournir un objet `page` via `Astro.props` contenant les données de la page courante et les informations de navigation
+
+### L'objet `page`
+
+L'objet `page` retourné par `paginate()` contient plusieurs propriétés utiles :
+
+| Propriété | Type | Description |
+| :--- | :--- | :--- |
+| `page.data` | `Array` | Tableau des éléments de la page courante |
+| `page.currentPage` | `number` | Numéro de la page courante (commence à 1) |
+| `page.lastPage` | `number` | Numéro de la dernière page |
+| `page.total` | `number` | Nombre total d'éléments |
+| `page.size` | `number` | Nombre d'éléments par page |
+| `page.url.current` | `string` | URL de la page courante |
+| `page.url.prev` | `string \| undefined` | URL de la page précédente (`undefined` sur la première page) |
+| `page.url.next` | `string \| undefined` | URL de la page suivante (`undefined` sur la dernière page) |
+| `page.url.first` | `string` | URL de la première page |
+| `page.url.last` | `string` | URL de la dernière page |
+
+### Nommage du fichier avec `[...page]`
+
+Pour que la pagination fonctionne, le fichier doit utiliser la syntaxe **rest parameter** `[...page].astro`. Cette syntaxe est nécessaire car :
+
+- La **première page** correspond à l'URL `/agenda/` (sans suffixe)
+- Les **pages suivantes** correspondent à `/agenda/2/`, `/agenda/3/`, etc.
+
+La syntaxe `[...page]` (avec les trois points) permet de capturer un paramètre **optionnel**, ce qui autorise Astro à générer la première page sans numéro dans l'URL.
+
+:::caution[Différence entre `[page]` et `[...page]`]
+- `[page].astro` → le paramètre est **obligatoire** : il ne peut pas correspondre à `/agenda/`
+- `[...page].astro` → le paramètre est **optionnel** : il correspond à `/agenda/`, `/agenda/2/`, etc.
+
+Pour la pagination, utilisez toujours `[...page].astro`.
+:::
+
+## Transformation de la page Agenda
+
+### Renommage du fichier
+
+La page Agenda actuelle se trouve dans `src/pages/agenda/index.astro`. Pour activer la pagination, **renommez** ce fichier :
+
+```
+src/pages/agenda/index.astro → src/pages/agenda/[...page].astro
+```
+
+Ce renommage indique à Astro que cette route est désormais dynamique et paginée.
+
+### Mise à jour du code
+
+Remplacez le contenu de `src/pages/agenda/[...page].astro` par le code suivant :
+
+```astro title="src/pages/agenda/[...page].astro" ins={13-16,18,42,44} del={12,41,43}
+---
+import { Picture } from "astro:assets";
+
+import Layout from "../../layouts/Layout.astro";
+import Hero from "../../components/Hero.astro";
+import Card from "../../components/Card.astro";
+
+import imgHero from "../../assets/img/musique-02.jpg";
+
+import { getUpcomingEvents } from "../../js/backend.mjs";
+
+const events = await getUpcomingEvents("event");
+export async function getStaticPaths({ paginate }) {
+  const events = await getUpcomingEvents("event");
+  return paginate(events, { pageSize: 3 });
+}
+
+const { page } = Astro.props;
+
+const title = "Agenda";
+const description =
+  "Lieu de création artistique, le conservatoire propose régulièrement des actions culturelles ouvertes à tous.";
+---
+
+<Layout title={title} description={description}>
+  <Hero title={title}>
+    <p slot="chapo">
+      Lieu de création artistique, le conservatoire propose régulièrement des
+      actions culturelles ouvertes à tous.
+    </p>
+    <Picture
+      slot="image"
+      src={imgHero}
+      alt="Violoncelles"
+      layout="full-width"
+      pictureAttributes={{ class: "duotone !absolute inset-0 object-cover" }}
+    />
+  </Hero>
+  <div class="grille my-24">
+    {
+      events.length > 0 ? (
+      page.data.length > 0 ? (
+        events.map((event) => <Card {...event} />)
+        page.data.map((event) => <Card {...event} />)
+      ) : (
+        <p class="col-span-4">Aucun événement à afficher.</p>
+      )
+    }
+  </div>
+</Layout>
+```
+
+### Différences avec la version précédente
+
+Voici les modifications clés par rapport au fichier `index.astro` initial :
+
+1. **Suppression de l'appel direct** : `const events = await getUpcomingEvents("event")` est remplacé par `getStaticPaths()`
+2. **Ajout de `getStaticPaths({ paginate })`** : la fonction reçoit `paginate` en paramètre, récupère les événements et les pagine par groupes de 3
+3. **Récupération de `page`** : au lieu des événements directement, on récupère l'objet `page` depuis `Astro.props`
+4. **Itération sur `page.data`** : on parcourt `page.data` (les événements de la page courante) au lieu de `events` (tous les événements)
+
+:::tip[pageSize]
+Le paramètre `pageSize: 3` détermine le nombre d'événements par page. Vous pouvez ajuster cette valeur selon vos besoins. Une valeur de 6 ou 9 est courante pour des grilles de cards (multiples de 3 pour maintenir l'alignement).
+:::
+
+## Création du composant Pagination
+
+### Structure du composant
+
+Créez le fichier `src/components/Pagination.astro` :
+
+```astro title="src/components/Pagination.astro"
+---
+const { page } = Astro.props;
+---
+
+{
+  page.lastPage > 1 && (
+    <nav
+      aria-label="Pagination"
+      class="my-8 flex items-center justify-center space-x-4 text-sm uppercase"
+    >
+      {page.url.prev && <a href={page.url.prev}>Précédent</a>}
+
+      <span>
+        Page {page.currentPage} / {page.lastPage}
+      </span>
+
+      {page.url.next && <a href={page.url.next}>Suivant</a>}
+    </nav>
+  )
+}
+```
+
+### Ajout du composant Pagination
+
+```astro title="src/pages/agenda/[...page].astro" ins={7,49} collapse={9-23, 27-39}
+---
+import { Picture } from "astro:assets";
+
+import Layout from "../../layouts/Layout.astro";
+import Hero from "../../components/Hero.astro";
+import Card from "../../components/Card.astro";
+import Pagination from "../../components/Pagination.astro";
+
+import imgHero from "../../assets/img/musique-02.jpg";
+
+import { getUpcomingEvents } from "../../js/backend.mjs";
+
+const events = await getUpcomingEvents("event");
+export async function getStaticPaths({ paginate }) {
+  const events = await getUpcomingEvents("event");
+  return paginate(events, { pageSize: 3 });
+}
+
+const { page } = Astro.props;
+
+const title = "Agenda";
+const description =
+  "Lieu de création artistique, le conservatoire propose régulièrement des actions culturelles ouvertes à tous.";
+---
+
+<Layout title={title} description={description}>
+  <Hero title={title}>
+    <p slot="chapo">
+      Lieu de création artistique, le conservatoire propose régulièrement des
+      actions culturelles ouvertes à tous.
+    </p>
+    <Picture
+      slot="image"
+      src={imgHero}
+      alt="Violoncelles"
+      layout="full-width"
+      pictureAttributes={{ class: "duotone !absolute inset-0 object-cover" }}
+    />
+  </Hero>
+  <div class="grille my-24">
+    {
+      page.data.length > 0 ? (
+        page.data.map((event) => <Card {...event} />)
+      ) : (
+        <p class="col-span-4">Aucun événement à afficher.</p>
+      )
+    }
+  </div>
+  <Pagination page={page} />
+</Layout>
+```
+
+## Routes générées
+
+Après le build, Astro génère automatiquement les fichiers HTML suivants (pour 9 événements avec `pageSize: 3`) :
+
+```
+dist/
+└── agenda/
+    ├── index.html          ← Page 1 (/agenda/)
+    ├── 2/
+    │   └── index.html      ← Page 2 (/agenda/2/)
+    └── 3/
+        └── index.html      ← Page 3 (/agenda/3/)
+```
+
+Les URLs sont propres et lisibles :
+
+- `/agenda/` → première page
+- `/agenda/2/` → deuxième page
+- `/agenda/3/` → troisième page

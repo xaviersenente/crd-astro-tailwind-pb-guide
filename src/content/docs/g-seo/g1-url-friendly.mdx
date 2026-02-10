@@ -1,0 +1,378 @@
+---
+title: URLs SEO-friendly
+description: Mettre en place un système de slug automatique pour remplacer les IDs PocketBase par des URLs lisibles et optimisées pour le référencement
+---
+
+import { Image } from 'astro:assets';
+
+import menuPage from "../../../assets/menu-pages.webp";
+
+:::note[Branche Git]
+**Branche :** [25.-URLs-user-friendly-slug](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/25.-URLs-user-friendly-slug)  
+**N° :** 25
+:::
+
+## Introduction
+
+Dans le chapitre sur les pages standard, nous avions identifié un problème majeur : les URLs de nos pages utilisaient les **IDs PocketBase** comme paramètres de route (`/ovsk2ybob0vye6o`, `/jcojqb2t23v23ok`...).
+
+Ces URLs sont :
+
+- Illisibles pour l'utilisateur
+- Impossibles à mémoriser ou à partager
+- Contre-productives pour le SEO — les moteurs de recherche privilégient les URLs **descriptives**
+
+Dans ce chapitre, nous allons :
+
+- Créer deux fonctions utilitaires `slugify()` et `slugifyCollection()` dans `helpers.js`
+- Modifier toutes les routes dynamiques pour utiliser des slugs au lieu des IDs
+- Rendre le menu de navigation **dynamique** à partir des données PocketBase
+- Ajouter quelques améliorations SEO au passage (`canonical URL`, `lang="fr"`, `site` dans la config Astro)
+
+## Principe des slugs
+
+### Qu'est-ce qu'un slug ?
+
+Un **slug** est une version normalisée d'une chaîne de caractères, destinée à être utilisée dans une URL. Il est généré en appliquant une série de transformations au titre du contenu :
+
+| Titre original | Slug généré |
+| :--- | :--- |
+| Concert de Noël | `concert-de-noel` |
+| Le Conservatoire | `le-conservatoire` |
+| Théâtre & Danse : Été 2026 | `theatre-danse-ete-2026` |
+
+### Pourquoi ne pas stocker le slug dans PocketBase ?
+
+On pourrait ajouter un champ `slug` directement dans les collections PocketBase. Mais cette approche a un inconvénient : elle nécessite que l'administrateur remplisse (ou qu'un hook génère) le slug à chaque création de contenu.
+
+Notre approche est différente : **le slug est calculé côté front, au moment du build**. Cela signifie :
+
+- Aucune modification de la base de données
+- Le slug est toujours synchronisé avec le titre
+- La logique est centralisée dans une seule fonction JavaScript
+
+## Fonction slugify()
+
+### Création de la fonction
+
+Ajoutez la fonction suivante à la fin de votre fichier `src/js/helpers.js` :
+
+```js title="src/js/helpers.js"
+/**
+ * Génère un slug URL-friendly à partir d'une chaîne de caractères
+ * Gère les caractères accentués français (é, è, ê, à, ç, etc.)
+ * @param {string} text - Texte à transformer en slug
+ * @returns {string} Slug normalisé (ex: "Concert de Noël" → "concert-de-noel")
+ */
+export function slugify(text) {
+  return text
+    .normalize("NFD")              // décompose les accents (é → e + ◌́)
+    .replace(/[\u0300-\u036f]/g, "") // supprime les diacritiques
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")   // tout caractère non alphanumérique → tiret
+    .replace(/(^-|-$)+/g, "");     // supprime les tirets en début/fin
+}
+```
+
+
+
+### Exemples de résultats
+
+```js
+slugify("Concert de Noël")        // → "concert-de-noel"
+slugify("Théâtre & Danse")        // → "theatre-danse"
+slugify("  Été 2026 !  ")         // → "ete-2026"
+slugify("L'Orchestre à cordes")   // → "l-orchestre-a-cordes"
+```
+
+## Fonction slugifyCollection()
+
+### Le problème des doublons
+
+La fonction `slugify()` transforme un titre en slug, mais que se passe-t-il si **deux contenus ont le même titre** ? On obtiendrait deux routes identiques, ce qui provoquerait une erreur au build.
+
+### Création de la fonction
+
+Ajoutez la fonction suivante dans `src/js/helpers.js`, juste après `slugify()` :
+
+```js title="src/js/helpers.js"
+/**
+ * Attribue un slug unique à chaque élément d'une collection
+ * En cas de doublons, ajoute un suffixe numérique (-2, -3, etc.)
+ * @param {Array<Object>} items - Tableau d'objets avec une propriété `title`
+ * @returns {Array<Object>} Les mêmes objets enrichis d'une propriété `slug`
+ */
+export function slugifyCollection(items) {
+  const slugCount = {};
+
+  return items.map((item) => {
+    const base = slugify(item.title);
+    slugCount[base] = (slugCount[base] || 0) + 1;
+    const slug = slugCount[base] === 1 ? base : `${base}-${slugCount[base]}`;
+    return { ...item, slug };
+  });
+}
+```
+
+### Fonctionnement
+
+1. Un compteur `slugCount` garde en mémoire le nombre d'occurrences de chaque slug de base
+2. Pour chaque élément, on génère le slug de base via `slugify(item.title)`
+3. Si c'est la **première occurrence**, le slug est utilisé tel quel
+4. Si c'est un **doublon**, on ajoute un suffixe numérique (`-2`, `-3`, etc.)
+5. L'objet original est retourné avec une **nouvelle propriété `slug`** ajoutée via le spread operator
+
+### Exemple avec doublons
+
+```js
+const items = [
+  { title: "Concert de Noël" },
+  { title: "Portes ouvertes" },
+  { title: "Concert de Noël" },  // doublon !
+];
+
+slugifyCollection(items);
+// [
+//   { title: "Concert de Noël",    slug: "concert-de-noel" },
+//   { title: "Portes ouvertes",    slug: "portes-ouvertes" },
+//   { title: "Concert de Noël",    slug: "concert-de-noel-2" },
+// ]
+```
+
+
+## Mise à jour des routes dynamiques
+
+Maintenant que nos fonctions de slug sont prêtes, nous devons modifier les fichiers qui utilisent `getStaticPaths()` pour passer des IDs aux slugs.
+
+### Template d'événement ([slug].astro)
+
+Dans `src/pages/agenda/event/[slug].astro`, importez `slugifyCollection` et modifiez `getStaticPaths()` :
+
+```astro title="src/pages/agenda/event/[slug].astro" ins={11,15-16} del={13-14} ins=', slugifyCollection'
+---
+import ImagePB from "../../../components/ImagePB.astro";
+import Layout from "../../../layouts/Layout.astro";
+import Patterns from "../../../components/AnimatedPatterns.astro";
+import { formatDate, slugifyCollection } from "../../../js/helpers";
+
+import { getCollection } from "../../../js/backend.mjs";
+
+export async function getStaticPaths() {
+  const events = await getCollection("event");
+  const eventsWithSlug = slugifyCollection(events);
+
+  return events.map((event) => ({
+    params: { slug: event.id },
+  return eventsWithSlug.map((event) => ({
+    params: { slug: event.slug },
+    props: { event },
+  }));
+}
+
+const { event } = Astro.props;
+// ... reste du template inchangé
+---
+```
+
+**Changements clés** :
+- Import de `slugifyCollection` en plus de `formatDate`
+- Les événements sont enrichis d'un slug via `slugifyCollection(events)`
+- `params: { slug: event.slug }` remplace `params: { slug: event.id }`
+
+**Résultat** : l'URL `/agenda/event/abc123def456` devient `/agenda/event/concert-de-noel`.
+
+### Page agenda paginée ([...page].astro)
+
+Dans `src/pages/agenda/[...page].astro` :
+
+```astro title="src/pages/agenda/[...page].astro" ins={12, 17-18} del={16}
+---
+import { Picture } from "astro:assets";
+
+import Layout from "../../layouts/Layout.astro";
+import Hero from "../../components/Hero.astro";
+import Card from "../../components/Card.astro";
+import Pagination from "../../components/Pagination.astro";
+
+import imgHero from "../../assets/img/musique-02.jpg";
+
+import { getUpcomingEvents } from "../../js/backend.mjs";
+import { slugifyCollection } from "../../js/helpers";
+
+export async function getStaticPaths({ paginate }) {
+  const events = await getUpcomingEvents("event");
+  return paginate(events, { pageSize: 3 });
+  const eventsWithSlug = slugifyCollection(events);
+  return paginate(eventsWithSlug, { pageSize: 3 });
+}
+---
+```
+
+Les événements paginés ont désormais une propriété `slug`, utilisée par le composant `Card` pour construire les liens.
+
+### Template de pages standard ([page].astro)
+
+Dans `src/pages/[page].astro` :
+
+```astro title="src/pages/[page].astro" ins={7,15-16} del={13-14}
+---
+import Layout from "../layouts/Layout.astro";
+import Hero from "../components/Hero.astro";
+import ImagePB from "../components/ImagePB.astro";
+
+import { getCollection } from "../js/backend.mjs";
+import { slugifyCollection } from "../js/helpers";
+
+export async function getStaticPaths() {
+  const pages = await getCollection("page");
+  const pagesWithSlug = slugifyCollection(pages);
+
+  return pages.map((page) => ({
+    params: { page: page.id },
+  return pagesWithSlug.map((page) => ({
+    params: { page: page.slug },
+    props: { page },
+  }));
+}
+---
+```
+
+**Résultat** : l'URL `/ovsk2ybob0vye6o` devient `/le-conservatoire`.
+
+### Page d'accueil (index.astro)
+
+Dans `src/pages/index.astro`, les 3 prochains événements affichés doivent aussi avoir un slug pour que les liens des cards fonctionnent :
+
+```astro title="src/pages/index.astro" ins={3,6} del={5}
+---
+import { getNextEvents } from "../js/backend.mjs";
+import { slugifyCollection } from "../js/helpers";
+
+const events = await getNextEvents();
+const events = slugifyCollection(await getNextEvents());
+---
+```
+
+La fonction `slugifyCollection()` enrichit chaque événement d'une propriété `slug` avant que les composants `Card` ne les utilisent.
+
+## Mise à jour du composant Card
+
+Le composant `Card` doit maintenant utiliser `event.slug` au lieu de `event.id` dans ses liens :
+
+```astro title="src/components/Card.astro" del={4,10} ins={5,11}
+  <h3
+    class="z-1 col-start-2 row-start-1 my-6 mr-4 self-end font-mono text-3xl text-white"
+  >
+    <a href={`/agenda/event/${event.id}`}>{event.title}</a>
+    <a href={`/agenda/event/${event.slug}`}>{event.title}</a>
+  </h3>
+  <!-- ... -->
+    <a
+      class="inline-block border-b-2 border-black uppercase"
+      href={`/agenda/event/${event.id}`}>Plus d'info</a>
+      href={`/agenda/event/${event.slug}`}>Plus d'info</a>
+```
+
+Ce changement est simple mais impacte toutes les occurrences du composant Card à travers le site (page d'accueil, page agenda, etc.).
+
+## Navigation dynamique dans le Header
+
+### Le problème des liens en dur
+
+Jusqu'ici, les liens du menu étaient écrits en dur avec les IDs PocketBase. Maintenant que nous avons des slugs, nous pouvons aller plus loin et rendre la **navigation entièrement dynamique** en récupérant les pages depuis PocketBase au moment du build.
+
+### Ajout de champs pour le menu dans la collection `page`
+
+Pour que le Header puisse construire la navigation dynamiquement, nous avons besoin d'informations supplémentaires dans chaque page PocketBase : l'ordre d'affichage dans le menu, un éventuel libellé alternatif et des classes CSS optionnelles.
+
+Ouvrez l'interface d'administration de PocketBase (`http://127.0.0.1:8090/_/`) et ajoutez les **3 champs suivants** à la collection `page` :
+
+| Champ | Type | Obligatoire | Description |
+| :--- | :--- | :--- | :--- |
+| `menuOrder` | `Number` | Non | Position dans le menu (1, 2, 3...). Si vide, la page n'apparaît pas dans la navigation |
+| `menuLabel` | `Plain text` | Non | Libellé affiché dans le menu. Si vide, le `title` de la page est utilisé |
+| `menuClass` | `Plain text` | Non | Classes CSS additionnelles pour personnaliser l'apparence du lien |
+
+<Image src={menuPage} alt="Ajout des champs menuOrder, menuLabel et menuClass dans la collection page de PocketBase" />
+
+#### Pourquoi ces champs sont optionnels
+
+Le champ `menuOrder` joue un double rôle :
+
+- **Ordre d'affichage** : il détermine la position du lien dans le menu (1 = premier, 2 = deuxième, etc.)
+- **Filtre d'inclusion** : si le champ est vide, la page est **exclue** du menu. Cela permet d'avoir des pages accessibles par URL (mentions légales, politique de confidentialité) sans les afficher dans la navigation principale
+
+Le champ `menuLabel` est utile quand le titre de la page est trop long ou trop formel pour un menu. Par exemple, une page intitulée « Le Conservatoire Henri Dutilleux » pourra afficher simplement « Le conservatoire » dans le menu.
+
+Le champ `menuClass` permet d'appliquer un style spécifique à un lien du menu. Dans notre cas, le bouton « S'inscrire » a un fond noir en desktop — la valeur `lg:bg-black lg:px-8 lg:text-white` est renseignée dans ce champ.
+
+### Nouveau frontmatter du Header
+
+Remplacez le frontmatter de `src/components/Header.astro` :
+
+```astro title="src/components/Header.astro" ins={5-25}
+---
+import Logo from "../assets/icones/logo.svg";
+import IconSearch from "../assets/icones/icon_search.svg";
+
+import { getCollection } from "../js/backend.mjs";
+import { slugifyCollection } from "../js/helpers";
+
+// Récupère les pages avec un menuOrder défini (= pages du menu)
+const pages = slugifyCollection(await getCollection("page"));
+const pageItems = pages
+  .filter((p) => p.menuOrder)
+  .map((p) => ({
+    href: `/${p.slug}`,
+    label: p.menuLabel || p.title,
+    class: p.menuClass || "",
+    order: p.menuOrder,
+  }));
+
+// Items fixes (routes non-PocketBase)
+const fixedItems = [{ href: "/agenda", label: "Agenda", class: "", order: 3 }];
+
+// Fusion et tri par ordre
+const navItems = [...pageItems, ...fixedItems].sort(
+  (a, b) => a.order - b.order,
+);
+---
+```
+
+### Explications
+
+1. **Récupération des pages** : on charge toutes les pages de la collection `page` et on leur attribue un slug
+2. **Filtrage par `menuOrder`** : seules les pages qui ont un champ `menuOrder` rempli dans PocketBase apparaissent dans le menu. Cela permet à l'administrateur de contrôler quelles pages sont visibles dans la navigation
+3. **Mapping des propriétés** :
+   - `href` : construit avec le slug (`/le-conservatoire`, `/contact`, etc.)
+   - `label` : utilise `menuLabel` si défini, sinon le titre de la page
+   - `class` : permet d'ajouter des classes CSS spécifiques (ex : bouton « S'inscrire » en fond noir)
+   - `order` : détermine la position dans le menu
+4. **Items fixes** : la page Agenda est une route statique (pas dans PocketBase), elle est ajoutée manuellement
+5. **Fusion et tri** : les deux sources sont combinées et triées par `order` pour garantir l'ordre souhaité
+
+### Boucle dynamique dans le template
+
+Remplacez la liste statique du menu par une boucle sur `navItems` :
+
+```astro title="src/components/Header.astro"
+      <ul
+        class="mx-16 mt-[25vh] *:relative *:overflow-hidden lg:m-0 lg:flex *:lg:before:absolute *:lg:before:bottom-0 *:lg:before:left-0 *:lg:before:h-2 *:lg:before:w-full *:lg:before:translate-y-2 *:lg:before:bg-black *:lg:before:transition-all *:lg:before:duration-300 *:lg:before:ease-in-out *:lg:hover:before:translate-y-0"
+      >
+        {
+          navItems.map((item) => (
+            <li>
+              <a
+                class={`block px-5 py-4 lg:py-8 ${item.class || ""}`}
+                href={item.href}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+```
+
+**Avant** : 5 éléments `<li>` écrits en dur avec des IDs PocketBase.  
+**Après** : une boucle `navItems.map()` qui génère les éléments dynamiquement avec des slugs lisibles.
