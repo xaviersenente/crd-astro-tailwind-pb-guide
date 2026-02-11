@@ -5,9 +5,318 @@ description: Optimisation pour les moteurs de recherche
 
 import { Image } from 'astro:assets';
 
-import menuPage from "../../../assets/menu-pages.webp";
 
 :::note[Branche Git]
 **Branche :** [26.-Améliorations-SEO](https://github.com/xaviersenente/crd-astro-tailwind-pb/tree/26.-Améliorations-SEO)  
 **N° :** 26
 :::
+
+## Introduction
+
+Dans le chapitre précédent, nous avons posé les premières bases du SEO : URLs lisibles, balise `lang="fr"`, URL canonique et fichier `robots.txt`. Nous allons maintenant aller plus loin en mettant en place :
+
+- Un **composant `SEO.astro`** centralisé pour gérer toutes les balises meta
+- Les balises **Open Graph** pour un affichage enrichi sur les réseaux sociaux
+- Les balises **Twitter Cards** pour un aperçu visuel sur X (Twitter)
+- Un **sitemap** automatique avec l'intégration `@astrojs/sitemap`
+- Une **image par défaut** pour les partages sociaux
+
+## Pourquoi centraliser le SEO ?
+
+Jusqu'ici, les balises `<title>`, `<meta description>` et `<link rel="canonical">` étaient gérées directement dans `Layout.astro`. Cette approche fonctionne, mais pose plusieurs problèmes à mesure que les besoins SEO grandissent :
+
+- **Duplication de logique** : le calcul du titre, de l'URL canonique et de l'image OG doit être regroupé
+- **Maintenabilité** : ajouter une balise meta nécessite de modifier le Layout
+- **Lisibilité** : le `<head>` devient vite encombré
+
+La solution : extraire toute la logique SEO dans un **composant dédié**.
+
+## Création du composant SEO
+
+### Structure du composant
+
+Créez le fichier `src/components/SEO.astro` :
+
+```astro title="src/components/SEO.astro"
+---
+/**
+ * Composant SEO centralisé
+ * Génère les balises meta, Open Graph, Twitter Cards et canonical URL
+ */
+
+const { title, description, image, type = "website" } = Astro.props;
+
+const siteName = "Conservatoire Henri Dutilleux";
+
+// Titre affiché dans l'onglet du navigateur
+const titleHead =
+  Astro.url.pathname === "/" ? siteName : `${title} — ${siteName}`;
+
+// URL canonique absolue
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+
+// Image OG : soit une image spécifique (événement), soit l'image par défaut
+const ogImage = image
+  ? new URL(image, Astro.site).href
+  : new URL("/og-default.jpg", Astro.site).href;
+---
+
+<!-- SEO de base -->
+<title>{titleHead}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonicalURL} />
+
+<!-- Open Graph -->
+<meta property="og:title" content={titleHead} />
+<meta property="og:description" content={description} />
+<meta property="og:type" content={type} />
+<meta property="og:url" content={canonicalURL} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:site_name" content={siteName} />
+<meta property="og:locale" content="fr_FR" />
+
+<!-- Twitter Cards -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={titleHead} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
+```
+
+### Explications du frontmatter
+
+#### Props du composant
+
+```js
+const { title, description, image, type = "website" } = Astro.props;
+```
+
+| Prop | Type | Par défaut | Description |
+| :--- | :--- | :--- | :--- |
+| `title` | `string` | — | Titre de la page |
+| `description` | `string` | — | Description pour les moteurs de recherche |
+| `image` | `string` | — | URL relative de l'image OG (optionnel) |
+| `type` | `string` | `"website"` | Type de contenu Open Graph (`website` ou `article`) |
+
+#### Construction du titre
+
+```js
+const titleHead =
+  Astro.url.pathname === "/" ? siteName : `${title} — ${siteName}`;
+```
+
+- **Page d'accueil** (`/`) : affiche uniquement le nom du site → `Conservatoire Henri Dutilleux`
+- **Autres pages** : ajoute le nom du site en suffixe → `Concert de Noël — Conservatoire Henri Dutilleux`
+
+Cette logique existait déjà dans `Layout.astro` — elle est simplement déplacée dans le composant SEO.
+
+#### URL canonique
+
+```js
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+```
+
+Construit une URL absolue à partir du chemin relatif et de la propriété `site` définie dans `astro.config.mjs`. Par exemple : `https://conservatoire-belfort.fr/agenda/event/concert-de-noel`.
+
+#### Image Open Graph
+
+```js
+const ogImage = image
+  ? new URL(image, Astro.site).href
+  : new URL("/og-default.jpg", Astro.site).href;
+```
+
+- Si une `image` est passée en prop, elle est convertie en URL absolue
+- Sinon, l'image par défaut `og-default.jpg` est utilisée
+
+### Les balises meta générées
+
+#### SEO de base
+
+| Balise | Rôle |
+| :--- | :--- |
+| `<title>` | Titre affiché dans les résultats de recherche et l'onglet du navigateur |
+| `<meta name="description">` | Description affichée sous le titre dans les résultats de recherche |
+| `<link rel="canonical">` | Indique l'URL de référence pour éviter le contenu dupliqué |
+
+#### Open Graph (réseaux sociaux)
+
+Les balises **Open Graph** (`og:`) contrôlent l'aperçu qui s'affiche quand quelqu'un partage un lien sur Facebook, LinkedIn, WhatsApp, etc.
+
+| Balise | Rôle |
+| :--- | :--- |
+| `og:title` | Titre affiché dans l'aperçu |
+| `og:description` | Description dans l'aperçu |
+| `og:type` | Type de contenu : `website` (page générale) ou `article` (contenu éditorial) |
+| `og:url` | URL canonique de la page |
+| `og:image` | Image affichée dans l'aperçu (format recommandé : 1200×630 px) |
+| `og:site_name` | Nom du site |
+| `og:locale` | Langue du contenu (`fr_FR`) |
+
+#### Twitter Cards
+
+Les balises **Twitter Cards** (`twitter:`) fonctionnent de manière similaire pour X (anciennement Twitter) :
+
+| Balise | Rôle |
+| :--- | :--- |
+| `twitter:card` | Type de carte : `summary_large_image` affiche une grande image |
+| `twitter:title` | Titre de l'aperçu |
+| `twitter:description` | Description de l'aperçu |
+| `twitter:image` | Image de l'aperçu |
+
+:::tip[Image par défaut]
+Placez une image `og-default.jpg` dans le dossier `public/`. Cette image sera utilisée pour toutes les pages qui n'ont pas d'image spécifique (page d'accueil, page agenda, etc.). Le format recommandé est **1200×630 pixels** en JPEG.
+:::
+
+## Mise à jour du Layout
+
+### Simplification du `<head>`
+
+Le composant `SEO` prend en charge toute la logique SEO. Le Layout n'a plus qu'à transmettre les props et inclure le composant dans le `<head>` :
+
+```astro title="src/layouts/Layout.astro" ins={8} del={10-14}
+---
+import "../styles/global.css";
+import "@fontsource/space-mono";
+import "@fontsource-variable/mulish";
+
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import SEO from "../components/SEO.astro";
+
+const { title, description } = Astro.props;
+const siteName = "Conservatoire Henri Dutilleux";
+const titleHead =
+  Astro.url.pathname === "/" ? siteName : `${title} — ${siteName}`;
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+
+const { title, description, image, type } = Astro.props;
+---
+```
+
+Le frontmatter ne contient plus que la déstructuration des props — toute la logique a été déplacée dans `SEO.astro`.
+
+### Remplacement dans le `<head>`
+
+```astro title="src/layouts/Layout.astro" ins={7} del={5,6,8}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="canonical" href={canonicalURL} />
+    <!-- ... favicons et manifest ... -->
+    <meta name="generator" content={Astro.generator} />
+    <title>{titleHead}</title>
+    <meta name="description" content={description} />
+    <SEO title={title} description={description} image={image} type={type} />
+  </head>
+```
+
+Les trois lignes (`canonical`, `title`, `description`) sont remplacées par un seul composant `<SEO />` qui génère toutes les balises nécessaires.
+
+### Nouvelles props du Layout
+
+Le composant `Layout` accepte maintenant deux nouvelles props optionnelles, transmises à `SEO.astro` :
+
+| Prop | Type | Description |
+| :--- | :--- | :--- |
+| `image` | `string` | Image OG spécifique à la page |
+| `type` | `string` | Type Open Graph (`website` par défaut, `article` pour les contenus éditoriaux) |
+
+## Mise à jour des pages de contenu
+
+### Pages standard et événements
+
+Les pages de contenu éditorial (pages standard et événements) doivent passer `type="article"` au Layout pour indiquer aux réseaux sociaux qu'il s'agit d'un article, et non d'un site web.
+
+#### Template de page standard (`[page].astro`)
+
+```astro title="src/pages/[page].astro" ins={1} del={2}
+<Layout title={title} description={description} type="article">
+<Layout title={title} description={description}>
+  <Hero title={title}>
+```
+
+#### Template d'événement (`[slug].astro`)
+
+```astro title="src/pages/agenda/event/[slug].astro" ins={1} del={2}
+<Layout title={title} description={description} type="article">
+<Layout title={title} description={description}>
+  <div class="grille relative lg:pt-28">
+```
+
+Le type `"article"` génère la balise `<meta property="og:type" content="article" />`, ce qui indique aux réseaux sociaux que cette page est un contenu éditorial (et non la page d'accueil d'un site). Cela peut influencer la manière dont l'aperçu est affiché.
+
+:::tip[Quand utiliser `type="article"` ?]
+- **`website`** (par défaut) : page d'accueil, page agenda, pages listant du contenu
+- **`article`** : pages de détail avec un contenu éditorial propre (événement, page standard, article de blog)
+:::
+
+## Sitemap automatique
+
+### Installation de l'intégration
+
+Ajoutez l'intégration `@astrojs/sitemap` au projet :
+
+```bash
+npx astro add sitemap
+```
+
+Cette commande installe le package et met à jour la configuration automatiquement.
+
+### Configuration dans `astro.config.mjs`
+
+Après l'installation, le fichier de configuration doit inclure l'intégration `sitemap()` :
+
+```mjs title="astro.config.mjs" ins={4,8,12}
+// @ts-check
+import { defineConfig } from "astro/config";
+import tailwindcss from "@tailwindcss/vite";
+import sitemap from "@astrojs/sitemap";
+
+// https://astro.build/config
+export default defineConfig({
+  site: "<url_du_site>",
+  vite: {
+    plugins: [tailwindcss()],
+  },
+  integrations: [sitemap()],
+});
+```
+
+### Fonctionnement
+
+Au moment du **build**, l'intégration génère automatiquement :
+
+- `dist/sitemap-index.xml` : fichier d'index référençant les sitemaps
+- `dist/sitemap-0.xml` : sitemap contenant toutes les URLs du site
+
+Le fichier `robots.txt` créé dans le chapitre précédent référence déjà ce sitemap :
+
+```txt title="public/robots.txt"
+Sitemap: https://conservatoire-belfort.fr/sitemap-index.xml
+```
+
+:::caution[Propriété `site` obligatoire]
+L'intégration `@astrojs/sitemap` nécessite que la propriété `site` soit définie dans `astro.config.mjs`. Sans cette propriété, le build échouera car le sitemap a besoin d'URLs absolues.
+:::
+
+### Vérification du sitemap
+
+Après un build (`npm run build`), inspectez le fichier généré :
+
+```bash
+cat dist/sitemap-0.xml
+```
+
+Vous devriez voir un fichier XML listant toutes les URLs du site :
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://conservatoire-belfort.fr/</loc></url>
+  <url><loc>https://conservatoire-belfort.fr/le-conservatoire/</loc></url>
+  <url><loc>https://conservatoire-belfort.fr/enseignements/</loc></url>
+  <url><loc>https://conservatoire-belfort.fr/agenda/</loc></url>
+  <url><loc>https://conservatoire-belfort.fr/agenda/event/concert-de-noel/</loc></url>
+  <!-- ... -->
+</urlset>
+```
