@@ -1,0 +1,71 @@
+---
+title: Structure des répertoires
+description: Organisation des dossiers et fichiers du projet
+---
+
+import { FileTree } from "@astrojs/starlight/components";
+
+## Structure du projet Astro
+
+<FileTree>
+- node_modules/ Modules installés par npm pour le projet
+- public/ Fichiers statiques
+  - favicon.svg
+- src/ Code source
+  - assets/ Images optimisées par Astro
+    - astro.svg
+    - background.svg
+  - components/ Composants réutilisables
+    - Header.astro
+    - …
+  - layouts/ Templates de mise en page
+    - Layout.astro
+  - pages/ Pages du site (routing)
+    - index.astro
+  - styles/ CSS globaux
+    - global.css
+- .gitignore Fichiers et dossiers ignorés par Git.
+- astro.config.mjs Configuration Astro
+- package.json Scripts et dépendances
+- README.md Fichier de présentation du projet
+- tsconfig.json Configuration TypeScript
+
+</FileTree>
+
+## Le dossier node_modules
+
+Le dossier `node_modules/` contient toutes les dépendances installées via npm. C'est un dossier généré automatiquement lors de l'exécution de `npm install` et il ne doit **jamais être versionné dans Git**.
+
+### Caractéristiques
+
+- **Très volumineux** : Peut contenir des milliers de fichiers et peser plusieurs centaines de Mo
+- **Généré automatiquement** : Recréé à partir du fichier `package-lock.json` 
+- **Spécifique à l'environnement** : Peut varier selon le système d'exploitation
+- **Non modifiable** : Ne jamais modifier directement les fichiers dans ce dossier
+
+### Gestion
+
+Le fichier `.gitignore` contient déjà `node_modules/` pour exclure ce dossier du versioning. Lors du clonage du projet sur une nouvelle machine, il suffit d'exécuter :
+
+```bash
+npm install
+```
+
+Cette commande lit `package.json` et `package-lock.json` pour installer exactement les mêmes versions des dépendances.
+
+:::tip[Problèmes avec node_modules ?]
+Si vous rencontrez des erreurs étranges ou des comportements inattendus :
+1. Supprimer le dossier `node_modules/`
+2. Supprimer le fichier `package-lock.json`
+3. Relancer `npm install`
+
+Cette manipulation "nettoie" les dépendances et résout souvent les problèmes de cache ou de versions conflictuelles.
+:::
+
+
+## Bonnes pratiques
+
+- Garder les composants petits et focalisés
+- Créer des composants réutilisables dans `/components`
+- Utiliser les layouts pour mutualiser la structure
+- Documenter les composants complexes

@@ -34,22 +34,21 @@ export default defineConfig({
           label: "Cadrage et fondations",
           collapsed: false,
           items: [
-            { label: "Objectif et pages", slug: "a-cadrage/a1-objectif" },
             {
               label: "Installation Astro / Tailwind",
-              slug: "a-cadrage/a2-installation",
+              slug: "a-cadrage/a1-installation",
             },
             {
               label: "Environnement de développement",
-              slug: "a-cadrage/a3-environnement",
+              slug: "a-cadrage/a2-environnement",
             },
             {
               label: "Structure des répertoires",
-              slug: "a-cadrage/a4-structure",
+              slug: "a-cadrage/a3-structure",
             },
             {
               label: "Fichiers sources",
-              slug: "a-cadrage/a5-sources",
+              slug: "a-cadrage/a4-sources",
             },
           ],
         },
