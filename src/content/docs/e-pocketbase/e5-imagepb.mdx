@@ -39,7 +39,7 @@ import { Picture } from 'astro:assets';
 
 const {
   record,
-  field = "imgFile",
+  field,
   alt,
   classPicture,
   classImg,
@@ -93,14 +93,21 @@ http://<URL_POCKETBASE>/api/files/COLLECTION_ID_OR_NAME/RECORD_ID/FILENAME
 
 Ajoutons maintenant la logique de récupération des URL d'image dans `ImagePB.astro` :
 
-```astro wrap title="src/components/ImagePB.astro" ins={3,7,17}
+```astro wrap title="src/components/ImagePB.astro" ins={3,14,24}
 ---
 import { Picture } from 'astro:assets';
 import { pb } from "../js/backend.mjs";
 
-const { record, field = "imgUrl", alt, classPicture, classImg, thumb = "1024x1024" } = Astro.props;
+const {
+  record,
+  field,
+  alt,
+  classPicture,
+  classImg,
+  thumb = "1024x1024",
+} = Astro.props;
 
-const imageUrl = record?.[field] ? pb.files.getURL(record, record[field], { thumb }) : null;
+const imageUrl = field ? pb.files.getURL(record, field, { thumb }) : null;
 ---
 
 {imageUrl && (
@@ -117,17 +124,17 @@ const imageUrl = record?.[field] ? pb.files.getURL(record, record[field], { thum
 
 **Explication de la logique** :
 
-- `record?.[field]` : Vérifie si `record` existe et contient une valeur pour le champ `field` (par défaut `"imgUrl"`). Utilisation de `?.` (optional chaining) pour éviter une erreur si `record` est `null` ou `undefined`.
+- `field` : Vérifie si la prop `field` est définie et non vide (truthy). Cette prop correspond au nom du fichier image stocké dans PocketBase.
 
-- Si `record?.[field]` est défini → appel à `pb.files.getURL(...)`
+- Si `field` est défini → appel à `pb.files.getURL(...)`
   - `pb.files.getURL(...)` est la méthode de PocketBase qui génère l'URL publique d'un fichier stocké
   - **Arguments** :
-    - `record` : L'enregistrement contenant l'image
-    - `record[field]` : Nom du fichier image stocké dans PocketBase
+    - `record` : L'enregistrement complet contenant l'image
+    - `field` : Le nom du fichier image à récupérer
     - `{ thumb }` : Option pour récupérer une version miniature de l'image (ex: `"1024x1024"`)
 
-- Sinon (si `record?.[field]` est `null` ou `undefined`) → retourne `null`
-  - Si l'image n'existe pas, `imageUrl` sera `null` et l'image ne s'affichera pas
+- Sinon (si `field` est `null`, `undefined` ou vide) → retourne `null`
+  - Si aucun fichier image n'est fourni, `imageUrl` sera `null` et l'image ne s'affichera pas
 
 ### Fonctionnalité de recadrage (thumb)
 
