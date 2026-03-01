@@ -43,28 +43,54 @@ const {
   alt,
   classPicture,
   classImg,
-  thumb = "1024x1024",
+  thumb,
+  layout,
 } = Astro.props;
+
+// Layouts disponibles pour les images responsives Astro
+// @see https://docs.astro.build/fr/reference/modules/astro-assets/#layout
+const VALID_LAYOUTS = ["constrained", "full-width", "fixed", "none"];
+// Vérifie que le layout est valide, sinon utilise "constrained" par défaut
+const resolvedLayout = VALID_LAYOUTS.includes(layout) ? layout : "constrained";
 ---
 
 {imageUrl && (
   <Picture 
     pictureAttributes={{ class: classPicture }} 
     class={classImg}
-    inferSize={true} 
+    inferSize={true}
+    layout={resolvedLayout}
     formats={['avif', 'webp']} 
-    alt={alt || "Image"} 
+    alt={alt || ""} 
   />
 )}
 ```
 
 **Props du composant** :
 - `record` : Un objet représentant un enregistrement de PocketBase
-- `field` : Nom du champ contenant l'URL de l'image (par défaut `"imgUrl"`)
-- `alt` : Texte alternatif pour l'image
+- `field` : Nom du champ contenant le fichier image dans le record PocketBase
+- `alt` : Texte alternatif pour l'image (chaîne vide par défaut)
 - `classPicture` : Classe CSS appliquée au `<picture>`
 - `classImg` : Classe CSS appliquée à l'`<img>`
-- `thumb` : Taille de l'image par défaut (ex : `"1024x1024"`)
+- `thumb` : Taille du thumbnail PocketBase (ex : `"1024x1024"`)
+- `layout` : Mode de rendu responsive de l'image (`"constrained"`, `"full-width"`, `"fixed"` ou `"none"` — `"constrained"` par défaut)
+
+### Layouts responsives Astro
+
+La prop `layout` permet de contrôler le comportement responsive de l'image via le composant `<Picture>` d'Astro :
+
+- **`constrained`** (par défaut) : L'image est redimensionnée pour s'adapter à son conteneur, sans jamais dépasser ses dimensions intrinsèques.
+- **`full-width`** : L'image occupe toute la largeur de son conteneur, idéale pour les images hero ou bannières.
+- **`fixed`** : L'image conserve ses dimensions exactes, sans adaptation responsive.
+- **`none`** : Aucun layout appliqué, le comportement est celui d'une image classique.
+
+La validation via `VALID_LAYOUTS` garantit qu'une valeur invalide ou absente sera remplacée par `"constrained"`, évitant ainsi les erreurs de rendu.
+
+<LinkCard
+  title="Astro - Layout d'images responsives"
+  href="https://docs.astro.build/fr/reference/modules/astro-assets/#layout"
+  description="Documentation officielle sur les modes de layout pour les composants Image et Picture"
+/>
 
 ## Étape 2 : Récupération de l'URL depuis PocketBase
 
@@ -89,52 +115,80 @@ http://<URL_POCKETBASE>/api/files/COLLECTION_ID_OR_NAME/RECORD_ID/FILENAME
   description="Documentation officielle sur la gestion des fichiers et la construction des URLs"
 />
 
-### 2.2 Récupération de l'URL de l'image
+### 2.1 Fonction utilitaire `getFileURL` dans `backend.mjs`
 
-Ajoutons maintenant la logique de récupération des URL d'image dans `ImagePB.astro` :
+Plutôt que d'importer directement l'instance `pb` dans le composant, nous allons encapsuler la logique de construction d'URL dans une fonction utilitaire dédiée dans `backend.mjs`. Cela renforce la séparation des responsabilités : le backend gère les interactions avec PocketBase, le composant se concentre sur l'affichage.
 
-```astro wrap title="src/components/ImagePB.astro" ins={3,14,24}
+Ajoutez la fonction suivante dans `backend.mjs` :
+
+```js wrap title="src/js/backend.mjs"
+/**
+ * Retourne l'URL d'un fichier PocketBase à partir d'un record et d'un champ.
+ * @param {object} record - L'enregistrement PocketBase
+ * @param {string} field - Le nom du champ fichier
+ * @param {string} [thumb="1024x1024"] - La taille du thumbnail
+ * @returns {string|null} L'URL du fichier ou null
+ */
+export function getFileURL(record, field, thumb) {
+  return field ? pb.files.getURL(record, field, { thumb }) : null;
+}
+```
+
+**Pourquoi cette approche ?**
+- Le composant `ImagePB` n'a plus besoin de connaître l'instance `pb` directement
+- La logique de construction d'URL est centralisée et testable
+- Si la méthode PocketBase change, une seule modification suffit
+
+### 2.2 Intégration dans le composant `ImagePB`
+
+Maintenant que la fonction `getFileURL` est disponible, mettons à jour le composant `ImagePB.astro` pour l'utiliser :
+
+```astro wrap title="src/components/ImagePB.astro" ins={3,14,25}
 ---
-import { Picture } from 'astro:assets';
-import { pb } from "../js/backend.mjs";
+import { Picture } from "astro:assets";
+import { getFileURL } from "../js/backend.mjs";
 
-const {
-  record,
-  field,
-  alt,
-  classPicture,
-  classImg,
-  thumb = "1024x1024",
-} = Astro.props;
+const { record, field, alt, classPicture, classImg, thumb, layout } =
+  Astro.props;
 
-const imageUrl = field ? pb.files.getURL(record, field, { thumb }) : null;
+// Layouts disponibles pour les images responsives Astro
+// @see https://docs.astro.build/fr/reference/modules/astro-assets/#layout
+const VALID_LAYOUTS = ["constrained", "full-width", "fixed", "none"];
+// Vérifie que le layout est valide, sinon utilise "constrained" par défaut
+const resolvedLayout = VALID_LAYOUTS.includes(layout) ? layout : "constrained";
+
+const imageUrl = record && field ? getFileURL(record, field, thumb) : null;
 ---
 
-{imageUrl && (
-  <Picture 
-    pictureAttributes={{ class: classPicture }} 
-    class={classImg}
-    inferSize={true} 
-    formats={['avif', 'webp']} 
-    alt={alt || "Image"} 
-    src={imageUrl} 
-  />
-)}
+{
+  imageUrl && (
+    <Picture
+      pictureAttributes={{ class: classPicture }}
+      class={classImg}
+      inferSize={true}
+      layout={resolvedLayout}
+      formats={["avif", "webp"]}
+      src={imageUrl}
+      alt={alt || ""}
+    />
+  )
+}
 ```
 
 **Explication de la logique** :
 
-- `field` : Vérifie si la prop `field` est définie et non vide (truthy). Cette prop correspond au nom du fichier image stocké dans PocketBase.
+- **Import** : On importe `getFileURL` depuis `backend.mjs` au lieu de l'instance `pb` directement. La logique de construction d'URL est ainsi centralisée dans le backend.
 
-- Si `field` est défini → appel à `pb.files.getURL(...)`
-  - `pb.files.getURL(...)` est la méthode de PocketBase qui génère l'URL publique d'un fichier stocké
-  - **Arguments** :
-    - `record` : L'enregistrement complet contenant l'image
-    - `field` : Le nom du fichier image à récupérer
-    - `{ thumb }` : Option pour récupérer une version miniature de l'image (ex: `"1024x1024"`)
+- **Props** : La déstructuration inclut désormais `thumb` (sans valeur par défaut) et `layout` pour contrôler le mode de rendu responsive.
 
-- Sinon (si `field` est `null`, `undefined` ou vide) → retourne `null`
-  - Si aucun fichier image n'est fourni, `imageUrl` sera `null` et l'image ne s'affichera pas
+- **Validation du layout** : Le tableau `VALID_LAYOUTS` liste les modes supportés par Astro. Si le `layout` passé en prop n'est pas valide (ou absent), `"constrained"` est utilisé par défaut.
+
+- **Construction de l'URL** :
+  - `record && field` : Vérifie que le record **et** le champ sont définis avant de tenter la construction de l'URL
+  - Si les deux sont présents → appel à `getFileURL(record, field, thumb)` qui délègue à `pb.files.getURL(...)`
+  - Sinon → retourne `null`, et l'image ne s'affiche pas
+
+- **Attribut `layout`** : Passé au composant `<Picture>` d'Astro pour gérer le comportement responsive de l'image.
 
 ### Fonctionnalité de recadrage (thumb)
 

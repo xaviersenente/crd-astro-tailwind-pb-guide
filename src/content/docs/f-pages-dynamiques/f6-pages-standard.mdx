@@ -61,8 +61,9 @@ const description = page.excerpt;
       slot="image"
       record={page}
       field={page.imgFile}
-      alt={page?.imgAlt || "Image"}
+      alt={page?.imgAlt}
       classPicture="duotone !absolute inset-0 object-cover"
+      layout="full-width"
     />
   </Hero>
   <div
@@ -86,7 +87,7 @@ Dans cette première version, nous utilisons les IDs PocketBase (comme `ovsk2ybo
 
 Modifiez votre fichier `src/components/Header.astro` pour mettre à jour les liens du menu :
 
-```astro title="src/components/Header.astro" {48-50,53-55,58-60,63-66,69-73}
+```astro title="src/components/Header.astro" collapse={17-45} ins='/ovsk2ybob0vye6o' ins='/jcojqb2t23v23ok' ins='/vmvhtgj92xtun6u' ins='/owvjomdsz9hkg87'
 ---
 import Logo from "../assets/icones/logo.svg";
 import IconSearch from "../assets/icones/icon_search.svg";

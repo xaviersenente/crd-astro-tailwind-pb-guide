@@ -7,7 +7,7 @@ Pour gérer correctement les données provenant de PocketBase, le composant `Car
 
 ### Remplacement de l'image statique
 
-```astro title="src/components/Card.astro" ins={3,16-22} del={2,8-15}
+```astro title="src/components/Card.astro" ins={3,16-23} del={2,8-15}
 ---
 import { Picture } from "astro:assets";
 import ImagePB from "./ImagePB.astro";
@@ -24,11 +24,12 @@ const event = Astro.props;
     class="group-hover:mix-blend-normal group-hover:grayscale-0"
   />
   <ImagePB
-    record={event}
-    field={event.imgFile}
-    alt={event.imgAlt}
-    classPicture="duotone col-start-1 row-start-1 col-span-2 row-span-2 group-hover:before:bg-black"
-    classImg="group-hover:grayscale-0 group-hover:mix-blend-normal"
+     record={event}
+     field={event.imgFile}
+     alt={event.imgAlt}
+     classPicture="duotone col-start-1 row-start-1 col-span-2 row-span-2 group-hover:before:bg-black"
+     classImg="group-hover:grayscale-0 group-hover:mix-blend-normal"
+     thumb="1024x680"
   />
   {/* ... reste du composant ... */}
 </article>
@@ -109,6 +110,7 @@ const event = Astro.props;
     alt={event.imgAlt}
     classPicture="duotone col-start-1 row-start-1 col-span-2 row-span-2 group-hover:before:bg-black"
     classImg="group-hover:grayscale-0 group-hover:mix-blend-normal"
+    thumb="1024x680"
   />
   <h3
     class="z-1 col-start-2 row-start-1 my-6 mr-4 self-end font-mono text-3xl text-white"

@@ -122,6 +122,7 @@ const description = event.excerpt;
       field={event.imgFile}
       alt={event.imgAlt}
       classPicture="duotone lg:col-span-5 -ml-6 -mr-6 lg:mx-0"
+      thumb="1024x1024"
     />
     <header class="lg:col-span-6 lg:col-start-7">
       <h1 class="my-12">{event.title}</h1>
@@ -311,6 +312,7 @@ const event = Astro.props;
     alt={event.imgAlt}
     classPicture="duotone col-start-1 row-start-1 col-span-2 row-span-2 group-hover:before:bg-black"
     classImg="group-hover:grayscale-0 group-hover:mix-blend-normal"
+    thumb="1024x680"
   />
   <h3
     class="z-1 col-start-2 row-start-1 my-6 mr-4 self-end font-mono text-3xl text-white"
